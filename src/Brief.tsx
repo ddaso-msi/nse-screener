@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters } from './data';
+import { HOSTED, describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters } from './data';
 import type { BriefScreen, Watchlist } from './user';
 
 interface Card {
@@ -146,8 +146,8 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
           </p>
         </div>
         <div className="brief-actions">
-          {stale && <span className="muted">Your watchlist or screens changed.</span>}
-          <button onClick={rebuild} disabled={busy} className={stale ? 'primary' : ''}>{busy ? 'Updating…' : 'Update brief'}</button>
+          {stale && <span className="muted">Your watchlist or screens changed.{HOSTED && ' The brief picks this up on its next evening run.'}</span>}
+          {!HOSTED && <button onClick={rebuild} disabled={busy} className={stale ? 'primary' : ''}>{busy ? 'Updating…' : 'Update brief'}</button>}
         </div>
       </div>
       {error && <p className="note down">{error}</p>}

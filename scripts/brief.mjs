@@ -20,23 +20,10 @@ const OUT = path.join(ROOT, 'public/data');
 const HORIZONS = [5, 10, 20];
 const LOOKBACK = 800; // calendar days: a year of indicators plus a year-ago P/E
 
-export const DEFAULT_SCREENS = [
-  {
-    id: 'delivery',
-    label: 'Delivery accumulation',
-    filters: { flags: [], ranges: { deliv: [60, null], volX: [1.5, null], chg: [0, null], avgTurnover: [1, null] } },
-  },
-  {
-    id: 'breakout-delivery',
-    label: '52-week breakout with delivery',
-    filters: { flags: ['newHi'], ranges: { deliv: [50, null], volX: [1.5, null], avgTurnover: [1, null] } },
-  },
-  {
-    id: 'pullback-20dma',
-    label: 'Pullback below 20-day average',
-    filters: { flags: [], ranges: { vs20: [null, 0], rsi: [30, 50], y1: [0, null], avgTurnover: [5, null] } },
-  },
-];
+// also served by functions/api/user/[name].js when nothing has been saved yet
+export const DEFAULT_SCREENS = JSON.parse(
+  await readFile(path.join(ROOT, 'scripts/default-screens.json'), 'utf8'),
+);
 
 const FILES = { watchlist: 'watchlist.json', screens: 'screens.json', log: 'log.json' };
 const DEFAULTS = { watchlist: {}, screens: DEFAULT_SCREENS, log: [] };

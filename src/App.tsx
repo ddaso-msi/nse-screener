@@ -6,7 +6,7 @@ import { NumInput } from './NumInput';
 import { useBriefScreens, useWatchlist } from './user';
 import {
   EMPTY, FIELD_GROUPS, FLAGS, IDX_LABEL, PRESETS, UNIVERSES,
-  applyFilters, describeRange, fmtCr, fmtMcap, fmtDate, fmtPct, fmtPrice, sortRows, toCsv,
+  HOSTED, applyFilters, describeRange, fmtCr, fmtMcap, fmtDate, fmtPct, fmtPrice, sortRows, toCsv,
   type Dataset, type Filters, type Flag, type NumKey, type Row,
 } from './data';
 
@@ -226,9 +226,11 @@ export default function App() {
         <div className="top-right">
           {syncMsg && <span className="muted">{syncMsg}</span>}
           <span className="asof">Data as of {fmtDate(data.asOf)}</span>
-          <button onClick={refresh} disabled={syncing}>
-            {syncing ? 'Refreshing…' : 'Refresh data'}
-          </button>
+          {!HOSTED && (
+            <button onClick={refresh} disabled={syncing}>
+              {syncing ? 'Refreshing…' : 'Refresh data'}
+            </button>
+          )}
         </div>
       </header>
 

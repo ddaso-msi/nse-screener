@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NumInput } from './NumInput';
-import { describeFilters, fmtDate, fmtPct, type Filters } from './data';
+import { HOSTED, describeFilters, fmtDate, fmtPct, type Filters } from './data';
 
 interface Stats {
   n: number;
@@ -119,10 +119,11 @@ function Custom({ filters, onOpenFilters }: { filters: Filters; onOpenFilters: (
           <span className="lbl">Costs per trade</span>
           <span className="unit"><NumInput label="Round-trip costs percent" placeholder="0" value={cost} onChange={setCost} /> %</span>
         </label>
-        <button className="primary" onClick={go} disabled={!testable || busy}>
+        <button className="primary" onClick={go} disabled={!testable || busy || HOSTED}>
           {busy ? 'Running…' : 'Run backtest'}
         </button>
       </div>
+      {HOSTED && <p className="note">Custom backtests need three years of price history in memory, so they only run on your Mac (npm run dev). Earlier runs are listed below.</p>}
       {busy && runs.length === 0 && <p className="note">The first run loads three years of history and takes a few seconds.</p>}
       {noFloor && <p className="note">This screen has no minimum turnover, so it includes illiquid stocks you may not be able to trade at these prices.</p>}
       {error && <p className="note down">{error}</p>}

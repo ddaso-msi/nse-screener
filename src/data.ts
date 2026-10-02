@@ -1,5 +1,8 @@
 import presets from './presets.json';
 
+/** True in the deployed build, where there is no local server to refresh data or run backtests. */
+export const HOSTED = import.meta.env.PROD;
+
 export interface Row {
   s: string;
   name: string;

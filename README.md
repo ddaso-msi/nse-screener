@@ -26,6 +26,14 @@ scripts/schedule.sh uninstall
 
 `data/user` is your own state; nothing regenerates it, so back it up if it matters.
 
+## Running in the cloud
+
+- **Nightly run**: `.github/workflows/brief.yml` builds the brief on GitHub Actions on weekdays at 19:30 and 22:00 IST, commits `data/user`, and publishes the app to Cloudflare Pages. Downloaded NSE files live in the Actions cache. The repo is the master copy of the forward log, so `git pull` before running the brief locally.
+- **Hosted app**: Cloudflare Pages project `nse-screener`. `functions/_middleware.js` puts the whole site behind one password (the `APP_PASSWORD` secret). `functions/api/user/[name].js` stores the watchlist and brief screens in the `USER` KV namespace, which the nightly run reads before building the brief.
+- **Not available hosted**: Refresh data, Update brief and custom backtests; they need the local dev server. A watchlist change shows up in the next evening's brief.
+- **Secrets**: `APP_PASSWORD` on the Pages project; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the GitHub repo. Until the GitHub secrets exist the workflow skips publishing.
+- **Local test of the hosted build**: `npm run build && npx wrangler pages dev dist --kv USER` with `APP_PASSWORD` in `.dev.vars`.
+
 ## Backtest
 
 ```bash
