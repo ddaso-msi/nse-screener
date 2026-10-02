@@ -1,0 +1,36 @@
+# One-off check: can a GitHub-hosted runner download the NSE archive files
+# the screener depends on? Run it from the Actions tab or `gh workflow run`.
+name: NSE reachability test
+
+on:
+  workflow_dispatch:
+    inputs:
+      date:
+        description: Trading session to fetch (DDMMYYYY)
+        default: "01102026"
+
+jobs:
+  probe:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Where is this runner?
+        run: curl -s -m 15 https://ipinfo.io/json | grep -E '"(country|region|org)"' || true
+      - name: Fetch NSE files
+        env:
+          D: ${{ inputs.date }}
+          UA: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+        run: |
+          short="${D:0:4}${D:6:2}"
+          fail=0
+          probe() {
+            code=$(curl -s -m 45 -A "$UA" -o out.bin -w "%{http_code} %{size_download}B %{time_total}s" "$2") || code="curl-error $?"
+            echo "$1: $code"
+            case "$code" in 200*) ;; *) fail=1 ;; esac
+          }
+          probe "bhavcopy   " "https://nsearchives.nseindia.com/products/content/sec_bhavdata_full_$D.csv"
+          head -c 120 out.bin; echo
+          probe "PR zip     " "https://nsearchives.nseindia.com/archives/equities/bhavcopy/pr/PR$short.zip"
+          probe "P/E        " "https://nsearchives.nseindia.com/content/equities/peDetail/PE_$short.csv"
+          probe "index list " "https://archives.nseindia.com/content/indices/ind_nifty50list.csv"
+          probe "company list" "https://archives.nseindia.com/content/equities/EQUITY_L.csv"
+          exit $fail
