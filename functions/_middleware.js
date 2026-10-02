@@ -3,7 +3,7 @@
 // API requests). Accounts are created with the invite code, which is the
 // APP_PASSWORD secret: `wrangler pages secret put APP_PASSWORD`. Without that
 // secret the site refuses everything.
-import { json, sessionUser } from '../server/auth.js';
+import { json, readTempCookie, sessionUser } from '../server/auth.js';
 import { loginPage } from '../server/login.js';
 
 export async function onRequest({ request, env, next, data }) {
@@ -21,5 +21,9 @@ export async function onRequest({ request, env, next, data }) {
   }
   const wantsPage = request.method === 'GET' && (request.headers.get('accept') ?? '').includes('text/html');
   if (!wantsPage) return json({ error: 'Sign in required' }, 401);
-  return new Response(loginPage, { status: 401, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
+  const pending = JSON.parse((await readTempCookie(env, request, 'sensa_pending')) ?? 'null');
+  const page = loginPage
+    .replace('__GOOGLE__', String(!!(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET)))
+    .replace('__PENDING__', JSON.stringify(pending?.email ?? '').replace(/</g, '\\u003c'));
+  return new Response(page, { status: 401, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
 }

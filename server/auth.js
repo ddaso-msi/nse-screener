@@ -3,6 +3,7 @@
 //   acct:<name>            { salt, hash, created }   PBKDF2-SHA256 password hash
 //   u:<name>:<what>        that user's watchlist, paper account and drawings
 //   sys:secret             key used to sign session cookies (generated on first use)
+//   g:<google id>          the account name linked to a Google sign-in
 //   sys:admin              the first account created; only it can edit the brief's screens
 //
 // A session is a signed cookie "name.expiry.signature"; nothing is stored per session.
@@ -39,6 +40,25 @@ export async function sessionCookie(env, name) {
   const body = `${name}.${Date.now() + SESSION_DAYS * 864e5}`;
   return `${COOKIE}=${body}.${await sign(env, body)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`;
 }
+/** A short-lived signed cookie carrying a small value through a redirect (used by Google sign-in). */
+export async function tempCookie(env, name, value, seconds = 600) {
+  const body = `${btoa(encodeURIComponent(value))}.${Date.now() + seconds * 1000}`;
+  return `${name}=${body}.${await sign(env, body)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${seconds}`;
+}
+export const dropCookie = (name) => `${name}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
+export async function readTempCookie(env, request, name) {
+  const raw = (request.headers.get('cookie') ?? '').split(/;\s*/).find((c) => c.startsWith(`${name}=`))?.slice(name.length + 1);
+  if (!raw) return null;
+  const [value, expiry, signature] = raw.split('.');
+  if (!value || !(Number(expiry) > Date.now()) || !signature) return null;
+  if (!(await same(signature, await sign(env, `${value}.${expiry}`)))) return null;
+  try {
+    return decodeURIComponent(atob(value));
+  } catch {
+    return null;
+  }
+}
+
 export const clearCookie = `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
 
 /** The signed-in user's name, or null. */
