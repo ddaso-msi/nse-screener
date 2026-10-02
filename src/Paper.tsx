@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { HOSTED, fmtDate, fmtPct, fmtPrice, monthOf, type Row } from './data';
+import { fmtDate, fmtPct, fmtPrice, monthOf, type Row } from './data';
 import { NumInput } from './NumInput';
 import { Delta, Icon, tone } from './ui';
 import { NEW_PAPER, PAPER_FEE, type Paper, type PaperPosition } from './user';
@@ -104,7 +104,6 @@ export function PaperTab({ paper, onSave, onReload, rowOf, asOf, onOpenStock, on
   const realised = paper.closed.reduce((s, c) => s + c.pnl, 0);
   const editPos = (id: number, patch: Partial<PaperPosition>) => onSave((p) => ({ ...p, positions: p.positions.map((x) => (x.id === id ? { ...x, ...patch } : x)) }));
   const empty = !paper.positions.length && !paper.orders.length && !paper.closed.length;
-  const stale = paper.last != null && paper.last < asOf;
   const riskOpen = paper.positions.reduce((v, p) => v + (p.stop ? Math.max(0, last(p) - p.stop) * p.qty : last(p) * p.qty), 0);
 
   return (
@@ -112,7 +111,7 @@ export function PaperTab({ paper, onSave, onReload, rowOf, asOf, onOpenStock, on
       <div className="bt-head first">
         <div>
           <h2>Paper trading</h2>
-          <p>A practice account with ₹{int.format(paper.start)} of virtual money. Orders fill at the next session's open; stops and targets are checked each evening.</p>
+          <p>A practice account with ₹{int.format(paper.start)} of virtual money. Orders fill at the next session's open; stops and targets are checked against each day's prices.</p>
         </div>
         {!empty && (
           <button className="plain" onClick={() => window.confirm('Reset the paper account to ₹10,00,000 and erase its history?') && onSave({ ...NEW_PAPER })}>
@@ -137,7 +136,6 @@ export function PaperTab({ paper, onSave, onReload, rowOf, asOf, onOpenStock, on
         </div>
       </div>
 
-      {stale && <p className="note">The account was last updated for {fmtDate(paper.last!)}. {HOSTED ? 'It catches up on the next evening run.' : 'Click Refresh in the header, or Update brief, to bring it up to date.'}</p>}
       {paper.notices.map((nt, i) => <p key={i} className="note">{fmtDate(nt.date, false)} · {nt.text}</p>)}
 
       {empty ? (

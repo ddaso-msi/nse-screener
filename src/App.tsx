@@ -7,6 +7,7 @@ import { Home } from './Home';
 import { News } from './News';
 import { Options } from './Options';
 import { PaperTab } from './Paper';
+import { advancePaper } from './paperEngine';
 import { Detail } from './Detail';
 import { Etfs } from './Etfs';
 import { NumInput } from './NumInput';
@@ -84,7 +85,17 @@ export default function App() {
   const [view, setView] = useState<'home' | 'brief' | 'screener' | 'etfs' | 'chart' | 'paper' | 'options' | 'news' | 'backtest'>('home');
   const [chartSymbol, setChartSymbol] = useState<string | null>(null);
   const [drawings, saveDrawings] = useDrawings();
-  const [paper, savePaper, , reloadPaper] = usePaper();
+  const [paper, savePaper, paperLoaded, reloadPaper] = usePaper();
+  // who is signed in (hosted site only; the local app has a single user)
+  const [me, setMe] = useState<{ name: string; admin: boolean } | null>(null);
+  useEffect(() => {
+    fetch('/api/auth/me').then((r) => (r.ok ? r.json() : null)).then((u) => u?.name && setMe(u)).catch(() => {});
+  }, []);
+  const signOut = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+    for (const k of ['watchlist', 'paper', 'drawings']) localStorage.removeItem(`nse-screener.${k}`);
+    location.reload();
+  };
   const [watchlist, saveWatchlist] = useWatchlist();
   const [briefScreens, saveBriefScreens] = useBriefScreens();
   const [watchOnly, setWatchOnly] = useState(false);
@@ -131,6 +142,17 @@ export default function App() {
   const everything = useMemo(() => [...(data?.rows ?? []), ...(data?.etfs ?? [])], [data]);
   const rowOf = useMemo(() => new Map(everything.map((r) => [r.s, r])), [everything]);
   const selectedRow = useMemo(() => (selected ? rowOf.get(selected) ?? null : null), [rowOf, selected]);
+
+  // bring the paper account up to the latest session (fills, stops, targets, account value)
+  const advancing = useRef(false);
+  useEffect(() => {
+    if (!data || !paperLoaded || advancing.current) return;
+    if (paper.last != null && paper.last >= data.asOf) return;
+    advancing.current = true;
+    advancePaper(paper, data.asOf)
+      .then((next) => next && savePaper(next))
+      .finally(() => { advancing.current = false; });
+  }, [data, paper, paperLoaded, savePaper]);
   const visible = useMemo(() => rows.slice(0, shown), [rows, shown]);
 
   // ↑/↓ steps through the results while a stock is open in the Screener
@@ -155,7 +177,7 @@ export default function App() {
     saveWatchlist((prev) => {
       const next = { ...prev };
       if (next[s]) delete next[s];
-      else next[s] = { added: data?.asOf ?? 0, note: '', level: null };
+      else next[s] = { added: data?.asOf ?? 0, note: '', level: null, price: rowOf.get(s)?.close };
       return next;
     });
   };
@@ -282,6 +304,11 @@ export default function App() {
               {syncing ? 'Refreshing…' : 'Refresh'}
             </button>
           )}
+          {me && (
+            <button className="ghost" onClick={signOut} title={`Signed in as ${me.name}. Click to sign out.`}>
+              {me.name} · Sign out
+            </button>
+          )}
           <button className="ghost square" onClick={nextTheme} aria-label={`Theme: ${theme}. Click to change.`} title={`Theme: ${theme}`}>
             <Icon name={theme === 'auto' ? 'auto' : theme === 'dark' ? 'moon' : 'sun'} />
           </button>
@@ -300,6 +327,7 @@ export default function App() {
           rowOf={rowOf}
           onGoScreener={() => setView('screener')}
           onRebuilt={reloadPaper}
+          canEditScreens={!HOSTED || !!me?.admin}
           onOpenFilters={(f) => { setFilters({ ...EMPTY, ...f }); setPreset(null); setWatchOnly(false); setShown(PAGE); setView('screener'); }}
         />
       )}

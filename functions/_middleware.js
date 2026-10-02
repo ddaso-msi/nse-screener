@@ -1,38 +1,25 @@
-// Password gate for the whole site (pages, data and API). The password is the
-// APP_PASSWORD secret: `wrangler pages secret put APP_PASSWORD`. Any username
-// is accepted. Without the secret the site refuses everything.
+// Everything on the site needs a signed-in account: pages, data files and the
+// API. Anyone without a session gets the sign-in page (or a 401 for data and
+// API requests). Accounts are created with the invite code, which is the
+// APP_PASSWORD secret: `wrangler pages secret put APP_PASSWORD`. Without that
+// secret the site refuses everything.
+import { json, sessionUser } from '../server/auth.js';
+import { loginPage } from '../server/login.js';
 
-const encoder = new TextEncoder();
-
-async function same(a, b) {
-  // compare digests so the check takes the same time whatever was sent
-  const [x, y] = await Promise.all([a, b].map((s) => crypto.subtle.digest('SHA-256', encoder.encode(s))));
-  const u = new Uint8Array(x), v = new Uint8Array(y);
-  let diff = 0;
-  for (let i = 0; i < u.length; i++) diff |= u[i] ^ v[i];
-  return diff === 0;
-}
-
-export async function onRequest({ request, env, next }) {
+export async function onRequest({ request, env, next, data }) {
   if (!env.APP_PASSWORD) return new Response('Not configured: APP_PASSWORD is not set.', { status: 503 });
-  const header = request.headers.get('authorization') ?? '';
-  if (header.startsWith('Basic ')) {
-    let given = '';
-    try {
-      const decoded = atob(header.slice(6));
-      given = decoded.slice(decoded.indexOf(':') + 1);
-    } catch {
-      // fall through to the challenge
-    }
-    if (given && (await same(given, env.APP_PASSWORD))) {
-      const res = await next();
-      const out = new Response(res.body, res);
-      out.headers.set('x-robots-tag', 'noindex');
-      return out;
-    }
+  const { pathname } = new URL(request.url);
+  if (pathname.startsWith('/api/auth/')) return next();
+
+  const user = await sessionUser(env, request);
+  if (user) {
+    data.user = user;
+    const res = await next();
+    const out = new Response(res.body, res);
+    out.headers.set('x-robots-tag', 'noindex');
+    return out;
   }
-  return new Response('Password required.', {
-    status: 401,
-    headers: { 'www-authenticate': 'Basic realm="NSE Screener", charset="UTF-8"' },
-  });
+  const wantsPage = request.method === 'GET' && (request.headers.get('accept') ?? '').includes('text/html');
+  if (!wantsPage) return json({ error: 'Sign in required' }, 401);
+  return new Response(loginPage, { status: 401, headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store', 'x-robots-tag': 'noindex' } });
 }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { HOSTED, describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters, type Row } from './data';
+import { BUILD_LABEL, HOSTED, describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters, type Row } from './data';
 import { BreadthMeter, Market, type MarketData } from './Market';
 import { Delta, Icon, Meter, Spark, tone } from './ui';
 import type { BriefScreen, Watchlist } from './user';
@@ -50,7 +50,6 @@ interface BriefData {
   generatedAt: string;
   market?: MarketData;
   screens: { id: string; label: string; filters: BriefScreen['filters']; total: number; fresh: Card[]; dropped: string[] }[];
-  watchlist: WatchRow[];
   scoreboard: { id: string; label: string; logged: number; h5: Outcome | null; h10: Outcome | null; h20: Outcome | null }[];
   log: LogEntry[];
   logTotal: number;
@@ -59,17 +58,62 @@ interface BriefData {
 const x1 = (v: number | null | undefined, suffix = '') => (v == null ? '–' : `${v.toFixed(1)}${suffix}`);
 const alertText = (a: Alert) => (a.ex ? a.text.replace(String(a.ex), fmtDate(a.ex)) : a.text);
 
+/**
+ * What is worth noting today about each watched stock. Worked out here, from
+ * the same data as the Screener, so every user gets their own without the
+ * evening job knowing who they are.
+ */
+function watchRows(watchlist: Watchlist, rowOf: Map<string, Row>, brief: BriefData): WatchRow[] {
+  const matched = new Map<string, string[]>();
+  for (const sc of brief.screens) for (const c of sc.fresh) (matched.get(c.s) ?? matched.set(c.s, []).get(c.s)!).push(sc.label);
+  const rows = Object.entries(watchlist).map(([s, item]): WatchRow => {
+    const r = rowOf.get(s);
+    if (!r) return { s, note: item.note ?? '', level: item.level ?? null, missing: true, alerts: [] };
+    const alerts: Alert[] = [];
+    const level = item.level;
+    const prev = r.chg != null ? r.close / (1 + r.chg / 100) : r.close;
+    if (level && level > 0) {
+      if (prev < level && r.close >= level) alerts.push({ kind: 'up', text: `Closed above your level of ₹${level}` });
+      else if (prev > level && r.close <= level) alerts.push({ kind: 'down', text: `Closed below your level of ₹${level}` });
+    }
+    if (r.newHi) alerts.push({ kind: 'up', text: 'New 52-week high' });
+    if (r.newLo) alerts.push({ kind: 'down', text: 'New 52-week low' });
+    if (r.cross === 1) alerts.push({ kind: 'up', text: 'Golden cross in the last 10 sessions' });
+    if (r.cross === -1) alerts.push({ kind: 'down', text: 'Death cross in the last 10 sessions' });
+    if (Math.abs(r.chg ?? 0) >= 4) alerts.push({ kind: r.chg! > 0 ? 'up' : 'down', text: `Moved ${r.chg! > 0 ? '+' : '−'}${Math.abs(r.chg!).toFixed(1)}% today` });
+    if ((r.volX ?? 0) >= 2) alerts.push({ kind: 'info', text: `Volume ${r.volX!.toFixed(1)}× its 20-day average` });
+    for (const label of matched.get(s) ?? []) alerts.push({ kind: 'info', text: `Newly matched "${label}"` });
+    if (r.bm) alerts.push({ kind: 'info', text: `Board meeting on ${fmtDate(r.bm.date)}: ${r.bm.purpose}` });
+    for (const subject of r.filed ?? []) alerts.push({ kind: 'info', text: `Filed today: ${subject}` });
+    if (r.build) alerts.push({ kind: r.build === 'LB' || r.build === 'SC' ? 'up' : 'down', text: `${BUILD_LABEL[r.build]} in futures (open interest ${fmtPct(r.foOiChg)})` });
+    if (r.ban) alerts.push({ kind: 'down', text: 'In the F&O ban period' });
+    if (r.pat?.length) alerts.push({ kind: 'info', text: `Chart pattern: ${r.pat.length} detected` });
+    if (r.nextEx) alerts.push({ kind: 'info', text: `${r.nextEx.text}, ex-date ${fmtDate(r.nextEx.ex)}` });
+    return {
+      s, name: r.name, close: r.close, chg: r.chg,
+      note: item.note ?? '',
+      level: level ?? null,
+      toLevel: level && level > 0 ? (level / r.close - 1) * 100 : null,
+      added: item.added ?? null,
+      sinceAdded: item.price ? (r.close / item.price - 1) * 100 : null,
+      alerts,
+    };
+  });
+  return rows.sort((a, b) => b.alerts.length - a.alerts.length || a.s.localeCompare(b.s));
+}
+
 const PREVIEW = 8; // rows shown per screen before "Show all"
 
 function weekday(key: number) {
   return new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100).toLocaleDateString('en-IN', { weekday: 'long' });
 }
 
-export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, current, onOpenStock, onOpenFilters, rowOf, onGoScreener, onRebuilt }: {
+export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, current, onOpenStock, onOpenFilters, rowOf, onGoScreener, onRebuilt, canEditScreens }: {
   rowOf: Map<string, Row>;
   onGoScreener: () => void;
-  /** Called after the brief is rebuilt (which also advances the paper account) */
   onRebuilt?: () => void;
+  /** Whether this user may change which screens the (shared) brief follows */
+  canEditScreens: boolean;
   watchlist: Watchlist;
   onToggleWatch: (s: string) => void;
   screens: BriefScreen[];
@@ -132,12 +176,9 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
   }
   if (!brief) return <div className="bt brief" />;
 
-  const inBrief = new Set(brief.watchlist.map((w) => w.s));
-  const watchKeys = Object.keys(watchlist);
-  const notesDiffer = brief.watchlist.some((w) => watchlist[w.s] && ((watchlist[w.s].note ?? '') !== w.note || (watchlist[w.s].level ?? null) !== w.level));
-  const screensDiffer = screens.length > 0 && screens.map((s) => s.id).join() !== brief.screens.map((s) => s.id).join();
-  const stale = watchKeys.length !== inBrief.size || watchKeys.some((s) => !inBrief.has(s)) || notesDiffer || screensDiffer;
-  const withAlerts = brief.watchlist.filter((w) => w.alerts.length > 0).length;
+  const watch = watchRows(watchlist, rowOf, brief);
+  const stale = screens.length > 0 && screens.map((s) => s.id).join() !== brief.screens.map((s) => s.id).join();
+  const withAlerts = watch.filter((w) => w.alerts.length > 0).length;
   const totalNew = brief.screens.reduce((n, s) => n + s.fresh.length, 0);
   const m = brief.market;
 
@@ -186,13 +227,13 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
 
       <nav className="subnav" aria-label="Brief sections">
         {m && <button onClick={() => jump('market')}>Market</button>}
-        <button onClick={() => jump('watchlist')}>Watchlist <em>{brief.watchlist.length}</em></button>
+        <button onClick={() => jump('watchlist')}>Watchlist <em>{watch.length}</em></button>
         {brief.screens.map((sc) => (
           <button key={sc.id} onClick={() => jump(`screen-${sc.id}`)}>{sc.label} <em>{sc.fresh.length}</em></button>
         ))}
         <button onClick={() => jump('log')}>Forward log</button>
         <span className="subnav-right">
-          {stale && <span className="muted">Your watchlist or screens changed.{HOSTED && ' The brief picks this up on its next evening run.'}</span>}
+          {stale && <span className="muted">The screens changed.{HOSTED && ' The brief picks this up on its next evening run.'}</span>}
           {!HOSTED && (
             <button className={stale ? 'primary' : 'plain'} onClick={rebuild} disabled={busy}>
               <span className={busy ? 'spin' : ''}><Icon name="refresh" /></span> {busy ? 'Updating…' : 'Update brief'}
@@ -205,8 +246,8 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
       {m && <Market market={m} />}
 
       <section id="watchlist">
-        <h3>Watchlist <small>{withAlerts} of {brief.watchlist.length} with something to note</small></h3>
-        {brief.watchlist.length === 0 ? (
+        <h3>Watchlist <small>{withAlerts} of {watch.length} with something to note</small></h3>
+        {watch.length === 0 ? (
           <div className="empty-card">
             <span className="big-star">★</span>
             <div>
@@ -217,7 +258,7 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
           </div>
         ) : (
           <div className="cards">
-            {brief.watchlist.map((w) => (
+            {watch.map((w) => (
               <article key={w.s} className={`card ${w.alerts.length ? 'has-alerts' : ''}`} onClick={() => onOpenStock(w.s)} tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onOpenStock(w.s)}>
                 <header>
                   <div>
@@ -258,7 +299,7 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
               <h3>{sc.label} <small>{sc.fresh.length} new today · {sc.total} matching in all</small></h3>
               <div>
                 <button className="link" onClick={() => onOpenFilters({ ...EMPTY, ...sc.filters })}>Open in Screener</button>
-                <button className="link" onClick={() => onSaveScreens((screens.length ? screens : brief.screens).filter((x) => x.id !== sc.id).map(({ id, label, filters }) => ({ id, label, filters })))}>Remove from brief</button>
+                {canEditScreens && <button className="link" onClick={() => onSaveScreens((screens.length ? screens : brief.screens).filter((x) => x.id !== sc.id).map(({ id, label, filters }) => ({ id, label, filters })))}>Remove from brief</button>}
               </div>
             </div>
             <div className="criteria">
@@ -330,10 +371,10 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
           </section>
         );
       })}
-      <button className="add-screen" onClick={addCurrent} disabled={currentCriteria === 0} title={currentCriteria === 0 ? 'Set some criteria in the Screener first' : undefined}>
+      {canEditScreens && <button className="add-screen" onClick={addCurrent} disabled={currentCriteria === 0} title={currentCriteria === 0 ? 'Set some criteria in the Screener first' : undefined}>
         + Follow another screen
         <small>{currentCriteria === 0 ? 'Set criteria in the Screener, then add them here' : 'Adds the criteria currently set in the Screener'}</small>
-      </button>
+      </button>}
 
       <section id="log">
         <h3>Forward log <small>{brief.logTotal} matches recorded since {brief.log.length ? fmtDate(brief.log[brief.log.length - 1].date) : '–'}</small></h3>

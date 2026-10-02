@@ -1,25 +1,31 @@
-// Watchlist and brief screens, stored in the USER KV namespace. The nightly
-// GitHub Action reads the same keys before it builds the brief.
+// Each signed-in user's own watchlist, paper account and chart drawings, plus
+// the list of screens the evening brief follows (shared; only the admin edits it).
 import defaultScreens from '../../../scripts/default-screens.json';
+import { json } from '../../../server/auth.js';
 
-const DEFAULTS = {
+const PERSONAL = {
   watchlist: {},
   drawings: {},
-  screens: defaultScreens,
   paper: { start: 1000000, cash: 1000000, orders: [], positions: [], closed: [], equity: [], notices: [], last: null },
 };
-const MAX_BYTES = 200_000;
-const json = (value, status = 200) =>
-  new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });
+const MAX_BYTES = 400_000;
 
-export async function onRequest({ request, env, params }) {
+export async function onRequest({ request, env, params, data }) {
   const name = params.name;
-  if (!(name in DEFAULTS)) return json({ error: 'Not found' }, 404);
+  const user = data.user; // set by functions/_middleware.js
+  const shared = name === 'screens';
+  if (!shared && !(name in PERSONAL)) return json({ error: 'Not found' }, 404);
+  const key = shared ? 'screens' : `u:${user}:${name}`;
+  const admin = (await env.USER.get('sys:admin')) === user;
 
   if (request.method === 'GET') {
-    return json((await env.USER.get(name, 'json')) ?? DEFAULTS[name]);
+    let value = await env.USER.get(key, 'json');
+    // data saved before accounts existed belongs to the first (admin) account
+    if (value == null && !shared && admin) value = await env.USER.get(name, 'json');
+    return json(value ?? (shared ? defaultScreens : PERSONAL[name]));
   }
   if (request.method === 'PUT') {
+    if (shared && !admin) return json({ error: 'Only the site owner can change the screens in the brief.' }, 403);
     const raw = await request.text();
     if (raw.length > MAX_BYTES) return json({ error: 'Too large' }, 413);
     let value;
@@ -29,7 +35,7 @@ export async function onRequest({ request, env, params }) {
       return json({ error: 'Expected JSON' }, 400);
     }
     if (typeof value !== 'object' || value === null) return json({ error: 'Expected JSON' }, 400);
-    await env.USER.put(name, JSON.stringify(value));
+    await env.USER.put(key, JSON.stringify(value));
     return json(value);
   }
   return json({ error: 'Method not allowed' }, 405);

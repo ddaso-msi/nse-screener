@@ -1,5 +1,6 @@
-// Evening brief: refreshes the data, finds what newly matched each screen,
-// reports on the watchlist, and keeps a forward log of every new match.
+// Evening brief: refreshes the data, finds what newly matched each screen and
+// keeps a forward log of every new match. Nothing here is per-user: watchlist
+// alerts and paper-trading accounts are worked out in each user's browser.
 //
 //   node scripts/brief.mjs            refresh data, then build the brief
 //   node scripts/brief.mjs --no-sync  build from data already on disk
@@ -35,7 +36,6 @@ const DEFAULTS = {
   drawings: {},
   paper: { start: PAPER_START, cash: PAPER_START, orders: [], positions: [], closed: [], equity: [], notices: [], last: null },
 };
-const PAPER_FEE = 0.0015; // brokerage, STT and slippage, charged on each side
 
 export async function readUser(name) {
   try {
@@ -140,95 +140,6 @@ function marketContext(universe) {
   };
 }
 
-/**
- * Moves the paper-trading account forward to the latest session, one session
- * at a time: orders fill at the next session's open, then stops and targets
- * are checked against each day's range (a stop and a target touched on the
- * same day count as the stop; a gap through a level fills at the open).
- */
-export function processPaper(paper, universe) {
-  const { dates } = universe;
-  const latest = dates[dates.length - 1];
-  const bySymbol = new Map(universe.symbols.map((sym) => [sym.s, sym]));
-  const round = (x) => Math.round(x * 100) / 100;
-  paper.notices ??= [];
-  const nifty = (d) => universe.deriv?.idx.get(d)?.['Nifty 50']?.close ?? null;
-  if (paper.last == null) {
-    paper.last = latest;
-    paper.equity = [{ date: latest, value: paper.cash, nifty: nifty(latest) }];
-    return paper;
-  }
-
-  // a split or bonus since entry changes the price scale: restate the position to match
-  for (const p of paper.positions) {
-    const sym = bySymbol.get(p.s);
-    const i = sym ? sym.date.indexOf(p.entryDate) : -1;
-    if (i < 0 || !p.ref) continue;
-    const k = sym.c[i] / p.ref;
-    if (Math.abs(k - 1) > 0.005) {
-      p.entry = round(p.entry * k);
-      if (p.stop) p.stop = round(p.stop * k);
-      if (p.target) p.target = round(p.target * k);
-      p.qty = Math.round(p.qty / k);
-      p.ref = sym.c[i];
-    }
-  }
-
-  const close = (p, price, date, reason) => {
-    const proceeds = price * p.qty * (1 - PAPER_FEE);
-    const cost = p.entry * p.qty * (1 + PAPER_FEE);
-    paper.cash = round(paper.cash + proceeds);
-    paper.closed.unshift({
-      s: p.s, qty: p.qty, entry: p.entry, entryDate: p.entryDate, exit: round(price), exitDate: date, reason,
-      pnl: round(proceeds - cost), pct: round((proceeds / cost - 1) * 100), note: p.note ?? '',
-    });
-    paper.positions = paper.positions.filter((x) => x !== p);
-  };
-
-  for (const d of dates.filter((x) => x > paper.last)) {
-    for (const p of [...paper.positions]) {
-      const sym = bySymbol.get(p.s);
-      const t = sym ? sym.date.indexOf(d) : -1;
-      if (t < 0) continue; // not traded that day
-      if (p.sell && p.sell < d) close(p, sym.o[t], d, 'Sold at the open');
-      else if (p.stop && sym.o[t] <= p.stop) close(p, sym.o[t], d, 'Stop hit on a gap down');
-      else if (p.stop && sym.l[t] <= p.stop) close(p, p.stop, d, 'Stop hit');
-      else if (p.target && sym.o[t] >= p.target) close(p, sym.o[t], d, 'Target hit on a gap up');
-      else if (p.target && sym.h[t] >= p.target) close(p, p.target, d, 'Target hit');
-    }
-    for (const o of [...paper.orders]) {
-      if (o.placed >= d) continue;
-      const sym = bySymbol.get(o.s);
-      const t = sym ? sym.date.indexOf(d) : -1;
-      if (t < 0) continue;
-      paper.orders = paper.orders.filter((x) => x !== o);
-      const price = sym.o[t];
-      const qty = Math.min(o.qty, Math.floor(paper.cash / (price * (1 + PAPER_FEE))));
-      if (qty <= 0) {
-        paper.notices.unshift({ date: d, text: `${o.s}: order not filled, not enough cash` });
-        continue;
-      }
-      if (qty < o.qty) paper.notices.unshift({ date: d, text: `${o.s}: bought ${qty} of ${o.qty}, cash ran out` });
-      paper.cash = round(paper.cash - price * qty * (1 + PAPER_FEE));
-      const pos = { id: o.id, s: o.s, qty, entry: round(price), entryDate: d, ref: sym.c[t], stop: o.stop ?? null, target: o.target ?? null, note: o.note ?? '' };
-      paper.positions.push(pos);
-      if (pos.stop && sym.l[t] <= pos.stop) close(pos, pos.stop, d, 'Stop hit');
-      else if (pos.target && sym.h[t] >= pos.target) close(pos, pos.target, d, 'Target hit');
-    }
-    let value = paper.cash;
-    for (const p of paper.positions) {
-      const sym = bySymbol.get(p.s);
-      let t = sym ? sym.n - 1 : -1;
-      while (t >= 0 && sym.date[t] > d) t--;
-      value += p.qty * (t >= 0 ? sym.c[t] : p.entry);
-    }
-    paper.equity.push({ date: d, value: round(value), nifty: nifty(d) });
-  }
-  paper.notices = paper.notices.slice(0, 12);
-  paper.last = latest;
-  return paper;
-}
-
 export async function runBrief({ log = console.log, refresh = true } = {}) {
   const synced = refresh ? await sync({ log }) : null;
   log('Building the brief…');
@@ -237,9 +148,7 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
   const bySymbol = new Map(universe.symbols.map((sym) => [sym.s, sym]));
   const screener = JSON.parse(await readFile(path.join(OUT, 'screener.json'), 'utf8'));
   const rowOf = new Map([...screener.rows, ...(screener.etfs ?? [])].map((r) => [r.s, r]));
-  const [watchlist, screens, entries] = await Promise.all([readUser('watchlist'), readUser('screens'), readUser('log')]);
-  const paper = processPaper(await readUser('paper'), universe);
-  await writeUser('paper', paper);
+  const [screens, entries] = await Promise.all([readUser('screens'), readUser('log')]);
 
   const card = (s) => {
     const r = rowOf.get(s);
@@ -257,7 +166,6 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
 
   // --- what newly matched, what dropped off
   const known = new Set(entries.map((e) => e.id));
-  const newBySymbol = new Map();
   const screenOut = screens.map((screen) => {
     const test = compile(screen.filters);
     const fresh = [], dropped = [];
@@ -274,7 +182,6 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
       }
     }
     for (const s of fresh) {
-      (newBySymbol.get(s) ?? newBySymbol.set(s, []).get(s)).push(screen.label);
       const id = `${latest}|${screen.id}|${s}`;
       if (!known.has(id)) entries.push({ id, date: latest, screen: screen.id, label: screen.label, s });
     }
@@ -323,50 +230,11 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
     return row;
   });
 
-  // --- watchlist
-  const watch = Object.entries(watchlist).map(([s, item]) => {
-    const c = card(s);
-    const sym = bySymbol.get(s);
-    const r = rowOf.get(s);
-    if (!c || !sym || !r) return { s, note: item.note ?? '', level: item.level ?? null, missing: true, alerts: [] };
-    const t = sym.n - 1;
-    const alerts = [];
-    const level = item.level;
-    if (level > 0 && t > 0) {
-      if (sym.c[t - 1] < level && sym.c[t] >= level) alerts.push({ kind: 'up', text: `Closed above your level of ₹${level}` });
-      else if (sym.c[t - 1] > level && sym.c[t] <= level) alerts.push({ kind: 'down', text: `Closed below your level of ₹${level}` });
-    }
-    if (r.newHi) alerts.push({ kind: 'up', text: 'New 52-week high' });
-    if (r.newLo) alerts.push({ kind: 'down', text: 'New 52-week low' });
-    if (r.cross === 1) alerts.push({ kind: 'up', text: 'Golden cross in the last 10 sessions' });
-    if (r.cross === -1) alerts.push({ kind: 'down', text: 'Death cross in the last 10 sessions' });
-    if (Math.abs(r.chg ?? 0) >= 4) alerts.push({ kind: r.chg > 0 ? 'up' : 'down', text: `Moved ${r.chg > 0 ? '+' : '−'}${Math.abs(r.chg).toFixed(1)}% today` });
-    if (r.volX >= 2) alerts.push({ kind: 'info', text: `Volume ${r.volX.toFixed(1)}× its 20-day average` });
-    for (const label of newBySymbol.get(s) ?? []) alerts.push({ kind: 'info', text: `Newly matched "${label}"` });
-    if (r.bm) alerts.push({ kind: 'info', text: `Board meeting on ${r.bm.date}: ${r.bm.purpose}`, ex: r.bm.date });
-    for (const subject of r.filed ?? []) alerts.push({ kind: 'info', text: `Filed today: ${subject}` });
-    if (r.build) alerts.push({ kind: r.build === 'LB' || r.build === 'SC' ? 'up' : 'down', text: `${{ LB: 'Long build-up', SB: 'Short build-up', SC: 'Short covering', LU: 'Long unwinding' }[r.build]} in futures (open interest ${r.foOiChg > 0 ? '+' : '−'}${Math.abs(r.foOiChg).toFixed(1)}%)` });
-    if (r.ban) alerts.push({ kind: 'down', text: 'In the F&O ban period' });
-    if (r.nextEx) alerts.push({ kind: 'info', text: `${r.nextEx.text}, ex-date ${r.nextEx.ex}`, ex: r.nextEx.ex });
-    const at = item.added ? sym.date.findIndex((d) => d >= item.added) : -1;
-    return {
-      ...c,
-      note: item.note ?? '',
-      level: level ?? null,
-      toLevel: level > 0 ? r2(pct(level, sym.c[t])) : null,
-      added: item.added ?? null,
-      sinceAdded: at >= 0 && at < t ? r2(pct(sym.c[t], sym.c[at])) : null,
-      alerts,
-    };
-  });
-  watch.sort((a, b) => b.alerts.length - a.alerts.length || a.s.localeCompare(b.s));
-
   const brief = {
     asOf: latest,
     generatedAt: new Date().toISOString(),
     market: { ...marketContext(universe), deriv: indexPositioning(universe.deriv, latest) },
     screens: screenOut,
-    watchlist: watch,
     scoreboard,
     log: [...entries].sort((a, b) => b.date - a.date || a.s.localeCompare(b.s)).slice(0, 400),
     logTotal: entries.length,
@@ -378,7 +246,7 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
   log(
     `Brief for ${latest}: ` +
       screenOut.map((s) => `${s.label} ${s.fresh.length} new`).join(', ') +
-      `; ${watch.length} on watchlist; ${entries.length} matches logged`,
+      `; ${entries.length} matches logged`,
   );
   return { ...(synced ?? { asOf: latest }), brief: { asOf: latest, logged: entries.length } };
 }

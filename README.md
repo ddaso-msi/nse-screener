@@ -29,10 +29,13 @@ scripts/schedule.sh uninstall
 ## Running in the cloud
 
 - **Nightly run**: `.github/workflows/brief.yml` builds the brief on GitHub Actions on weekdays at 19:30 and 22:00 IST, commits `data/user`, and publishes the app to Cloudflare Pages. Downloaded NSE files live in the Actions cache. The repo is the master copy of the forward log, so `git pull` before running the brief locally.
-- **Hosted app**: Cloudflare Pages project `nse-screener`. `functions/_middleware.js` puts the whole site behind one password (the `APP_PASSWORD` secret). `functions/api/user/[name].js` stores the watchlist and brief screens in the `USER` KV namespace, which the nightly run reads before building the brief.
-- **Not available hosted**: Refresh data, Update brief and custom backtests; they need the local dev server. A watchlist change shows up in the next evening's brief.
+- **Hosted app**: Cloudflare Pages project `nse-screener`. Everything on it (pages, data, API) needs a signed-in account.
+- **Accounts** (`server/auth.js`, `functions/`): people create their own account with a name, a password and the invite code, which is the `APP_PASSWORD` secret. Passwords are stored as PBKDF2 hashes in the `USER` KV namespace; a session is a signed cookie lasting 30 days. The first account created is the owner. Sign-in is limited to 10 tries per name per 15 minutes.
+- **Per-user data**: each account has its own watchlist, paper account and chart drawings (`u:<name>:…` in KV). Watchlist alerts and paper-trade fills are worked out in the browser from the published data files, so the nightly job handles no per-user data. The list of screens the brief follows is shared, and only the owner can change it.
+- **Removing someone / a forgotten password**: delete their account key and they can sign up again with the same name, keeping their data: `npx wrangler kv key delete "acct:<name>" --binding USER --remote`. Changing `APP_PASSWORD` changes the invite code for new sign-ups only.
+- **Not available hosted**: Refresh data, Update brief and custom backtests; they need the local dev server.
 - **Secrets**: `APP_PASSWORD` on the Pages project; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the GitHub repo. Until the GitHub secrets exist the workflow skips publishing.
-- **Local test of the hosted build**: `npm run build && npx wrangler pages dev dist --kv USER` with `APP_PASSWORD` in `.dev.vars`.
+- **Local test of the hosted build**: `npm run build && npx wrangler pages dev dist --kv USER` with `APP_PASSWORD` in `.dev.vars`. The local dev app (`npm run dev`) has no sign-in and a single user, stored in `data/user/`.
 
 ## ETFs tab
 
@@ -54,7 +57,7 @@ Drawing tools are a horizontal level and a trendline, stored per stock in `data/
 
 ## Paper trading
 
-A practice account with ₹10,00,000 of virtual money (`data/user/paper.json`; the `paper` key in KV when hosted). Orders are placed from a stock's panel, sized by the share of the account you are willing to lose at the stop. `processPaper()` in `scripts/brief.mjs` runs with every brief: orders fill at the next session's open, stops and targets are checked against each day's range (stop first if both are touched; a gap fills at the open), 0.15% is charged per side, and positions are restated after a split or bonus. The nightly workflow reads the account from KV and writes it back after processing.
+A practice account with ₹10,00,000 of virtual money (`data/user/paper.json`; the `paper` key in KV when hosted). Orders are placed from a stock's panel, sized by the share of the account you are willing to lose at the stop. `advancePaper()` in `src/paperEngine.ts` runs in the browser whenever newer data is loaded: orders fill at the next session's open, stops and targets are checked against each day's range (stop first if both are touched; a gap fills at the open), 0.15% is charged per side, and positions are restated after a split or bonus.
 
 ## Options tab
 

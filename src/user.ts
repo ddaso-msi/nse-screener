@@ -6,6 +6,8 @@ export interface WatchItem {
   added: number;
   note: string;
   level: number | null;
+  /** Close on the session it was added, for "since added" */
+  price?: number;
 }
 export type Watchlist = Record<string, WatchItem>;
 export interface BriefScreen {
