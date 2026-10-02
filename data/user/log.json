@@ -1,0 +1,659 @@
+[
+  {
+    "id": "20261001|delivery|ALKEM",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "ALKEM",
+    "close": 5220,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|ASIANPAINT",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "ASIANPAINT",
+    "close": 2407,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|BAJAJFINSV",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "BAJAJFINSV",
+    "close": 1732.6,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|CARYSIL",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "CARYSIL",
+    "close": 1044.8,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|CCL",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "CCL",
+    "close": 1056.6,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|GLOBAL",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "GLOBAL",
+    "close": 136.51,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|HDFCAMC",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "HDFCAMC",
+    "close": 2308.1,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|NAVNETEDUL",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "NAVNETEDUL",
+    "close": 123.87,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|NYKAA",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "NYKAA",
+    "close": 324.95,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|RUPA",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "RUPA",
+    "close": 130.58,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|SBILIFE",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "SBILIFE",
+    "close": 1721.6,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|SRF",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "SRF",
+    "close": 2486.2,
+    "last": 0
+  },
+  {
+    "id": "20261001|delivery|STOVEKRAFT",
+    "date": 20261001,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "STOVEKRAFT",
+    "close": 809.15,
+    "last": 0
+  },
+  {
+    "id": "20261001|breakout-delivery|AAREYDRUGS",
+    "date": 20261001,
+    "screen": "breakout-delivery",
+    "label": "52-week breakout with delivery",
+    "s": "AAREYDRUGS",
+    "close": 103.85,
+    "last": 0
+  },
+  {
+    "id": "20261001|breakout-delivery|ONEPOINT",
+    "date": 20261001,
+    "screen": "breakout-delivery",
+    "label": "52-week breakout with delivery",
+    "s": "ONEPOINT",
+    "close": 74.37,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ACUTAAS",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ACUTAAS",
+    "close": 3196.5,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ADANIPORTS",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ADANIPORTS",
+    "close": 1737.8,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|AEGISVOPAK",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "AEGISVOPAK",
+    "close": 290.75,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|APLAPOLLO",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "APLAPOLLO",
+    "close": 2115.7,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|APOLLO",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "APOLLO",
+    "close": 394,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ARFIN",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ARFIN",
+    "close": 87.25,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ARTEMISMED",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ARTEMISMED",
+    "close": 336.4,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ASAHIINDIA",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ASAHIINDIA",
+    "close": 944.25,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ASKAUTOLTD",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ASKAUTOLTD",
+    "close": 618.15,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ASTERDM",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ASTERDM",
+    "close": 708.9,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|AVTNPL",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "AVTNPL",
+    "close": 87.85,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|BANDHANBNK",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "BANDHANBNK",
+    "close": 176,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|BHAGYANGR",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "BHAGYANGR",
+    "close": 402.65,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|CAPLIPOINT",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "CAPLIPOINT",
+    "close": 2631.9,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|CHENNPETRO",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "CHENNPETRO",
+    "close": 1346.4,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|CORDSCABLE",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "CORDSCABLE",
+    "close": 318.9,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|DIACABS",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "DIACABS",
+    "close": 345,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|DIVGIITTS",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "DIVGIITTS",
+    "close": 1136.4,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|EXICOM",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "EXICOM",
+    "close": 151.1,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|FEDERALBNK",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "FEDERALBNK",
+    "close": 318.2,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|GLAND",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "GLAND",
+    "close": 2874.4,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|GNFC",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "GNFC",
+    "close": 589.15,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|GOODLUCK",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "GOODLUCK",
+    "close": 499.35,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|HSCL",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "HSCL",
+    "close": 665.15,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|INDOBORAX",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "INDOBORAX",
+    "close": 469.5,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|IRISDOREME",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "IRISDOREME",
+    "close": 60.46,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|JTLIND",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "JTLIND",
+    "close": 86.23,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|KSL",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "KSL",
+    "close": 913,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|KTKBANK",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "KTKBANK",
+    "close": 321.6,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|LLOYDSME",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "LLOYDSME",
+    "close": 1776.8,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|LUMAXTECH",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "LUMAXTECH",
+    "close": 1978.9,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|MCX",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "MCX",
+    "close": 3204,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|MINDACORP",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "MINDACORP",
+    "close": 667.35,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|MOTHERSON",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "MOTHERSON",
+    "close": 157.03,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|MUNJALAU",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "MUNJALAU",
+    "close": 104.07,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|PFOCUS",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "PFOCUS",
+    "close": 301.55,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|PVRINOX",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "PVRINOX",
+    "close": 1215.3,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|RAIN",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "RAIN",
+    "close": 208.52,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|RATNAMANI",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "RATNAMANI",
+    "close": 2619.4,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|SANGHVIMOV",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SANGHVIMOV",
+    "close": 429.5,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|SAREGAMA",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SAREGAMA",
+    "close": 494.75,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|SGMART",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SGMART",
+    "close": 742.2,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|SHRIPISTON",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SHRIPISTON",
+    "close": 4490.5,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|SKIPPER",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SKIPPER",
+    "close": 541.2,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|STEELXIND",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "STEELXIND",
+    "close": 11.22,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|STYLAMIND",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "STYLAMIND",
+    "close": 3219.9,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|STYLEBAAZA",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "STYLEBAAZA",
+    "close": 368.35,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|TBOTEK",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "TBOTEK",
+    "close": 1671.5,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|TIPSMUSIC",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "TIPSMUSIC",
+    "close": 644.2,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|TVSSCS",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "TVSSCS",
+    "close": 128.42,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|UNICHEMLAB",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "UNICHEMLAB",
+    "close": 535.05,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|VARROC",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "VARROC",
+    "close": 830.6,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|VINDHYATEL",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "VINDHYATEL",
+    "close": 2617,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|VSSL",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "VSSL",
+    "close": 383.3,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|WABAG",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "WABAG",
+    "close": 2004.9,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|WELENT",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "WELENT",
+    "close": 724.45,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|WOCKPHARMA",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "WOCKPHARMA",
+    "close": 2083.9,
+    "last": 0
+  },
+  {
+    "id": "20261001|pullback-20dma|ZYDUSLIFE",
+    "date": 20261001,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ZYDUSLIFE",
+    "close": 1145.7,
+    "last": 0
+  }
+]

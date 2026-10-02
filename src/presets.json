@@ -1,0 +1,259 @@
+[
+  {
+    "id": "all",
+    "label": "All stocks",
+    "blurb": "Everything traded in the latest session, most liquid first.",
+    "filters": {},
+    "sort": [
+      "avgTurnover",
+      -1
+    ]
+  },
+  {
+    "id": "breakout",
+    "label": "52-week breakouts",
+    "blurb": "Made a new 52-week high today.",
+    "filters": {
+      "flags": [
+        "newHi"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "volX",
+      -1
+    ]
+  },
+  {
+    "id": "momentum",
+    "label": "Momentum leaders",
+    "blurb": "Strong 3- and 6-month returns, above both key averages, not yet overheated.",
+    "filters": {
+      "ranges": {
+        "m3": [
+          15,
+          null
+        ],
+        "m6": [
+          25,
+          null
+        ],
+        "vs50": [
+          0,
+          null
+        ],
+        "vs200": [
+          0,
+          null
+        ],
+        "rsi": [
+          50,
+          80
+        ],
+        "avgTurnover": [
+          5,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "m3",
+      -1
+    ]
+  },
+  {
+    "id": "volume",
+    "label": "Volume shockers",
+    "blurb": "Traded at least 3× their 20-day average volume.",
+    "filters": {
+      "ranges": {
+        "volX": [
+          3,
+          null
+        ],
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "volX",
+      -1
+    ]
+  },
+  {
+    "id": "nearhigh",
+    "label": "Near 52W high",
+    "blurb": "Within 5% of the 52-week high and above the 200 DMA.",
+    "filters": {
+      "ranges": {
+        "fromHi": [
+          -5,
+          null
+        ],
+        "vs200": [
+          0,
+          null
+        ],
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "fromHi",
+      -1
+    ]
+  },
+  {
+    "id": "golden",
+    "label": "Golden cross",
+    "blurb": "50 DMA crossed above the 200 DMA in the last 10 sessions.",
+    "filters": {
+      "flags": [
+        "golden"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "avgTurnover",
+      -1
+    ]
+  },
+  {
+    "id": "pullback",
+    "label": "Pullback in uptrend",
+    "blurb": "Above the 200 DMA with a positive year, but dipped below the 20 DMA.",
+    "filters": {
+      "ranges": {
+        "vs200": [
+          0,
+          null
+        ],
+        "vs20": [
+          null,
+          0
+        ],
+        "y1": [
+          0,
+          null
+        ],
+        "rsi": [
+          30,
+          50
+        ],
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "rsi",
+      1
+    ]
+  },
+  {
+    "id": "delivery",
+    "label": "Delivery accumulation",
+    "blurb": "Up on above-average volume with 60%+ delivery.",
+    "filters": {
+      "ranges": {
+        "deliv": [
+          60,
+          null
+        ],
+        "volX": [
+          1.5,
+          null
+        ],
+        "chg": [
+          0,
+          null
+        ],
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "deliv",
+      -1
+    ]
+  },
+  {
+    "id": "oversold",
+    "label": "Oversold",
+    "blurb": "RSI at or below 30.",
+    "filters": {
+      "ranges": {
+        "rsi": [
+          null,
+          30
+        ],
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "rsi",
+      1
+    ]
+  },
+  {
+    "id": "overbought",
+    "label": "Overbought",
+    "blurb": "RSI at or above 70.",
+    "filters": {
+      "ranges": {
+        "rsi": [
+          70,
+          null
+        ],
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "rsi",
+      -1
+    ]
+  },
+  {
+    "id": "newlow",
+    "label": "52-week lows",
+    "blurb": "Made a new 52-week low today.",
+    "filters": {
+      "flags": [
+        "newLo"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          1,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "chg",
+      1
+    ]
+  }
+]
