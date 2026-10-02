@@ -280,5 +280,45 @@
       "chg",
       1
     ]
+  },
+  {
+    "id": "longbuild",
+    "label": "Futures: long build-up",
+    "blurb": "F&O stocks where price rose and futures open interest grew 3% or more today (new long positions).",
+    "filters": {
+      "flags": [
+        "longBuild"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          5,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "foOiChg",
+      -1
+    ]
+  },
+  {
+    "id": "shortbuild",
+    "label": "Futures: short build-up",
+    "blurb": "F&O stocks where price fell and futures open interest grew 3% or more today (new short positions).",
+    "filters": {
+      "flags": [
+        "shortBuild"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          5,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "foOiChg",
+      -1
+    ]
   }
 ]

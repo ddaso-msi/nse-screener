@@ -49,7 +49,26 @@ export interface Row {
   /** L / M / S by market-cap rank (top 100, next 150, rest) */
   cap: 'L' | 'M' | 'S' | null;
   nextEx: { ex: number; text: string } | null;
+  /** 1 if the stock has futures and options */
+  fo: 0 | 1;
+  /** Futures open interest change today / over 5 sessions, % */
+  foOiChg: number | null;
+  oi5: number | null;
+  /** Put OI / call OI */
+  pcr: number | null;
+  /** At-the-money implied volatility, %, and where it ranks against the past year (0-100) */
+  iv: number | null;
+  ivRank: number | null;
+  /** LB long build-up, SB short build-up, SC short covering, LU long unwinding */
+  build: 'LB' | 'SB' | 'SC' | 'LU' | null;
+  ban: 0 | 1;
+  /** Next board meeting on or after the latest session */
+  bm: { date: number; purpose: string; results: boolean } | null;
+  /** Subjects of material filings made on the latest session */
+  filed: string[];
 }
+
+export const BUILD_LABEL = { LB: 'Long build-up', SB: 'Short build-up', SC: 'Short covering', LU: 'Long unwinding' } as const;
 
 export interface Dataset {
   asOf: number;
@@ -75,9 +94,10 @@ export type NumKey =
   | 'close' | 'chg' | 'w1' | 'm1' | 'm3' | 'm6' | 'y1'
   | 'fromHi' | 'fromLo' | 'vs20' | 'vs50' | 'vs200'
   | 'rsi' | 'volX' | 'deliv' | 'avgTurnover' | 'turnover'
-  | 'mcap' | 'pe' | 'epsG' | 'divY' | 'rs';
+  | 'mcap' | 'pe' | 'epsG' | 'divY' | 'rs'
+  | 'foOiChg' | 'oi5' | 'pcr' | 'ivRank';
 
-export type Flag = 'newHi' | 'newLo' | 'golden' | 'death';
+export type Flag = 'newHi' | 'newLo' | 'golden' | 'death' | 'longBuild' | 'shortBuild' | 'shortCover' | 'longUnwind';
 
 export interface Filters {
   q: string;
@@ -89,7 +109,7 @@ export interface Filters {
 
 export const EMPTY: Filters = { q: '', universe: 'ALL', sector: '', flags: [], ranges: {} };
 
-export const UNIVERSES: { code: string; label: string; has: (idx: string | null) => boolean }[] = [
+export const UNIVERSES: { code: string; label: string; has: (idx: string | null, row: Row) => boolean }[] = [
   { code: 'ALL', label: 'All NSE stocks', has: () => true },
   { code: 'N50', label: 'Nifty 50', has: (i) => i === 'N50' },
   { code: 'NN50', label: 'Nifty Next 50', has: (i) => i === 'NN50' },
@@ -99,6 +119,7 @@ export const UNIVERSES: { code: string; label: string; has: (idx: string | null)
   { code: 'N500', label: 'Nifty 500', has: (i) => i != null && i !== 'MIC250' },
   { code: 'MIC250', label: 'Nifty Microcap 250', has: (i) => i === 'MIC250' },
   { code: 'OTHER', label: 'Outside the indices', has: (i) => i == null },
+  { code: 'FNO', label: 'F&O stocks', has: (_i, r) => r.fo === 1 },
 ];
 
 export const CAP_LABEL = { L: 'Large cap', M: 'Mid cap', S: 'Small cap' } as const;
@@ -143,6 +164,15 @@ export const FIELD_GROUPS: { title: string; fields: FieldDef[] }[] = [
     ],
   },
   {
+    title: 'Derivatives (F&O stocks)',
+    fields: [
+      { key: 'foOiChg', label: 'Futures OI change', unit: '%', hint: 'Change in futures open interest today, all expiries combined' },
+      { key: 'oi5', label: 'Futures OI, 5 sessions', unit: '%' },
+      { key: 'pcr', label: 'Put/call ratio', unit: '', hint: 'Put open interest divided by call open interest' },
+      { key: 'ivRank', label: 'IV rank', unit: '', hint: '0–100: share of the past year when implied volatility was lower than today. High = options are expensive.' },
+    ],
+  },
+  {
     title: 'Returns',
     fields: [
       { key: 'chg', label: 'Day change', unit: '%' },
@@ -179,6 +209,10 @@ export const FLAGS: { key: Flag; label: string; test: (r: Row) => boolean }[] = 
   { key: 'newLo', label: 'New 52W low today', test: (r) => r.newLo === 1 },
   { key: 'golden', label: 'Golden cross (last 10 sessions)', test: (r) => r.cross === 1 },
   { key: 'death', label: 'Death cross (last 10 sessions)', test: (r) => r.cross === -1 },
+  { key: 'longBuild', label: 'Futures: long build-up today', test: (r) => r.build === 'LB' },
+  { key: 'shortBuild', label: 'Futures: short build-up today', test: (r) => r.build === 'SB' },
+  { key: 'shortCover', label: 'Futures: short covering today', test: (r) => r.build === 'SC' },
+  { key: 'longUnwind', label: 'Futures: long unwinding today', test: (r) => r.build === 'LU' },
 ];
 
 export interface Preset {
@@ -222,7 +256,7 @@ export function applyFilters(rows: Row[], f: Filters): Row[] {
   ][];
   return rows.filter((r) => {
     if (q && !r.s.includes(q) && !r.name.toUpperCase().includes(q)) return false;
-    if (!universe.has(r.idx)) return false;
+    if (!universe.has(r.idx, r)) return false;
     if (f.sector && r.sector !== f.sector) return false;
     for (const flag of flags) if (!flag.test(r)) return false;
     for (const [key, [min, max]] of ranges) {
@@ -279,7 +313,7 @@ export function toCsv(rows: Row[]) {
     ['Symbol', 's'], ['Company', 'name'], ['Sector', 'sector'], ['Index', 'idx'], ['Close', 'close'],
     ['Day %', 'chg'], ['1W %', 'w1'], ['1M %', 'm1'], ['3M %', 'm3'], ['6M %', 'm6'], ['1Y %', 'y1'],
     ['Market Cap Cr', 'mcap'], ['P/E', 'pe'], ['EPS', 'eps'], ['Earnings Growth 1Y %', 'epsG'], ['Dividend Yield %', 'divY'],
-    ['Relative Strength', 'rs'], ['RSI 14', 'rsi'], ['vs 20DMA %', 'vs20'], ['vs 50DMA %', 'vs50'], ['vs 200DMA %', 'vs200'],
+    ['Relative Strength', 'rs'], ['Futures OI Chg %', 'foOiChg'], ['Futures Position', 'build'], ['Put/Call Ratio', 'pcr'], ['IV %', 'iv'], ['IV Rank', 'ivRank'], ['RSI 14', 'rsi'], ['vs 20DMA %', 'vs20'], ['vs 50DMA %', 'vs50'], ['vs 200DMA %', 'vs200'],
     ['52W High', 'hi52'], ['52W Low', 'lo52'], ['From 52W High %', 'fromHi'], ['Volume', 'vol'],
     ['Volume x 20D avg', 'volX'], ['Delivery %', 'deliv'], ['Avg Turnover Cr', 'avgTurnover'],
   ];

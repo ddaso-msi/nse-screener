@@ -24,7 +24,7 @@ const KEEP_LATEST_MCAP = 3; // besides the first session of every month
 const exists = (p) => stat(p).then(() => true, () => false);
 const tagDate = (tag) => Number(tag.slice(4)) * 10000 + Number(tag.slice(2, 4)) * 100 + Number(tag.slice(0, 2));
 
-async function download(url) {
+export async function download(url) {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(45000) });
@@ -39,7 +39,7 @@ async function download(url) {
 }
 
 // Minimal zip reader: returns { lowercased name -> Buffer } for stored/deflated entries.
-function unzip(buf) {
+export function unzip(buf) {
   const out = {};
   let eocd = buf.length - 22;
   while (eocd >= 0 && buf.readUInt32LE(eocd) !== 0x06054b50) eocd--;

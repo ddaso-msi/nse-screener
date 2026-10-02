@@ -11,6 +11,7 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { indexPositioning } from './derivatives.mjs';
 import { baseline, compile, loadUniverse } from './engine.mjs';
 import { sync } from './sync.mjs';
 
@@ -150,6 +151,7 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
       s, name: r.name, close: r.close, chg: r.chg, volX: r.volX, deliv: r.deliv, rsi: r.rsi, rs: r.rs,
       vs50: r.vs50, vs200: r.vs200, fromHi: r.fromHi, hi52: r.hi52, low10: r2(low10),
       mcap: r.mcap, pe: r.pe, avgTurnover: r.avgTurnover, nextEx: r.nextEx,
+      foOiChg: r.foOiChg, build: r.build, bm: r.bm,
     };
   };
 
@@ -241,6 +243,10 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
     if (Math.abs(r.chg ?? 0) >= 4) alerts.push({ kind: r.chg > 0 ? 'up' : 'down', text: `Moved ${r.chg > 0 ? '+' : '−'}${Math.abs(r.chg).toFixed(1)}% today` });
     if (r.volX >= 2) alerts.push({ kind: 'info', text: `Volume ${r.volX.toFixed(1)}× its 20-day average` });
     for (const label of newBySymbol.get(s) ?? []) alerts.push({ kind: 'info', text: `Newly matched "${label}"` });
+    if (r.bm) alerts.push({ kind: 'info', text: `Board meeting on ${r.bm.date}: ${r.bm.purpose}`, ex: r.bm.date });
+    for (const subject of r.filed ?? []) alerts.push({ kind: 'info', text: `Filed today: ${subject}` });
+    if (r.build) alerts.push({ kind: r.build === 'LB' || r.build === 'SC' ? 'up' : 'down', text: `${{ LB: 'Long build-up', SB: 'Short build-up', SC: 'Short covering', LU: 'Long unwinding' }[r.build]} in futures (open interest ${r.foOiChg > 0 ? '+' : '−'}${Math.abs(r.foOiChg).toFixed(1)}%)` });
+    if (r.ban) alerts.push({ kind: 'down', text: 'In the F&O ban period' });
     if (r.nextEx) alerts.push({ kind: 'info', text: `${r.nextEx.text}, ex-date ${r.nextEx.ex}`, ex: r.nextEx.ex });
     const at = item.added ? sym.date.findIndex((d) => d >= item.added) : -1;
     return {
@@ -258,7 +264,7 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
   const brief = {
     asOf: latest,
     generatedAt: new Date().toISOString(),
-    market: marketContext(universe),
+    market: { ...marketContext(universe), deriv: indexPositioning(universe.deriv, latest) },
     screens: screenOut,
     watchlist: watch,
     scoreboard,

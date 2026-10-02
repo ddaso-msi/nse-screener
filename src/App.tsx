@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Backtest } from './Backtest';
 import { Brief } from './Brief';
+import { News } from './News';
 import { Detail } from './Detail';
 import { NumInput } from './NumInput';
+import { Delta, Icon, Meter, RangeBar, Spark, StockSearch, tone, useTheme } from './ui';
 import { useBriefScreens, useWatchlist } from './user';
 import {
-  EMPTY, FIELD_GROUPS, FLAGS, IDX_LABEL, PRESETS, UNIVERSES,
+  BUILD_LABEL, EMPTY, FIELD_GROUPS, FLAGS, IDX_LABEL, PRESETS, UNIVERSES,
   HOSTED, applyFilters, describeRange, fmtCr, fmtMcap, fmtDate, fmtPct, fmtPrice, sortRows, toCsv,
   type Dataset, type Filters, type Flag, type NumKey, type Row,
 } from './data';
@@ -24,42 +26,45 @@ const loadSaved = (): Saved[] => {
   }
 };
 
-const tone = (v: number | null) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const pctCell = (v: number | null) => <span className={tone(v)}>{fmtPct(v)}</span>;
 
 const COLUMNS: { key: keyof Row; label: string; title?: string; cell: (r: Row) => React.ReactNode }[] = [
   { key: 'close', label: 'Price', cell: (r) => fmtPrice(r.close) },
-  { key: 'chg', label: 'Day', cell: (r) => <span className={tone(r.chg)}>{fmtPct(r.chg, 2)}</span> },
+  { key: 'chg', label: 'Day', cell: (r) => <Delta value={r.chg} /> },
   { key: 'w1', label: '1W', cell: (r) => pctCell(r.w1) },
   { key: 'm1', label: '1M', cell: (r) => pctCell(r.m1) },
   { key: 'm3', label: '3M', cell: (r) => pctCell(r.m3) },
   { key: 'm6', label: '6M', cell: (r) => pctCell(r.m6) },
   { key: 'y1', label: '1Y', cell: (r) => pctCell(r.y1) },
-  { key: 'rs', label: 'RS', title: 'Relative strength, 1–99: share of stocks outperformed over the past year', cell: (r) => (r.rs == null ? '–' : r.rs) },
+  { key: 'rs', label: 'RS', title: 'Relative strength, 1–99: share of stocks outperformed over the past year', cell: (r) => <Meter value={r.rs} /> },
+  {
+    key: 'foOiChg', label: 'Fut OI', title: 'Change in futures open interest today, and what it means with the price move (F&O stocks only)',
+    cell: (r) =>
+      r.fo ? (
+        <span className="oi-cell">
+          {r.build && <span className={`tag ${r.build === 'LB' || r.build === 'SC' ? 'up' : 'down'}`} title={BUILD_LABEL[r.build]}>{r.build}</span>}
+          {fmtPct(r.foOiChg)}
+        </span>
+      ) : <span className="muted">–</span>,
+  },
   { key: 'mcap', label: 'M.Cap', title: 'Market capitalisation, ₹ crore', cell: (r) => fmtMcap(r.mcap) },
   { key: 'pe', label: 'P/E', title: 'NSE trailing P/E', cell: (r) => (r.pe == null ? '–' : r.pe.toFixed(1)) },
   { key: 'rsi', label: 'RSI', title: '14-session RSI', cell: (r) => (r.rsi == null ? '–' : r.rsi.toFixed(0)) },
   { key: 'vs50', label: 'vs 50D', title: 'Price vs 50-day moving average', cell: (r) => pctCell(r.vs50) },
   { key: 'vs200', label: 'vs 200D', title: 'Price vs 200-day moving average', cell: (r) => pctCell(r.vs200) },
-  { key: 'fromHi', label: '52W high', title: 'Distance from the 52-week high', cell: (r) => fmtPct(r.fromHi) },
+  {
+    key: 'fromHi', label: '52W range', title: 'Where the price sits between its 52-week low and high, and the distance from the high',
+    cell: (r) => (
+      <span className="range-cell">
+        <RangeBar low={r.lo52} high={r.hi52} value={r.close} title={`52-week low ₹${fmtPrice(r.lo52)}, high ₹${fmtPrice(r.hi52)}`} />
+        {fmtPct(r.fromHi)}
+      </span>
+    ),
+  },
   { key: 'volX', label: 'Vol ×', title: 'Volume vs 20-session average', cell: (r) => (r.volX == null ? '–' : `${r.volX.toFixed(1)}×`) },
   { key: 'deliv', label: 'Deliv', title: 'Delivery percentage', cell: (r) => (r.deliv == null ? '–' : `${r.deliv.toFixed(0)}%`) },
   { key: 'avgTurnover', label: 'Turnover', title: '20-session average daily turnover, ₹ crore', cell: (r) => fmtCr(r.avgTurnover) },
 ];
-
-function Spark({ data }: { data: number[] }) {
-  if (data.length < 2) return <svg className="spark" />;
-  const lo = Math.min(...data);
-  const hi = Math.max(...data);
-  const pts = data
-    .map((v, i) => `${((i / (data.length - 1)) * 62 + 1).toFixed(1)},${(19 - ((v - lo) / (hi - lo || 1)) * 18).toFixed(1)}`)
-    .join(' ');
-  return (
-    <svg className={`spark ${data[data.length - 1] >= data[0] ? 'up' : 'down'}`} viewBox="0 0 64 20" aria-hidden>
-      <polyline points={pts} />
-    </svg>
-  );
-}
 
 export default function App() {
   const [data, setData] = useState<Dataset | null>(null);
@@ -70,11 +75,12 @@ export default function App() {
   const [shown, setShown] = useState(PAGE);
   const [selected, setSelected] = useState<string | null>(null);
   const [saved, setSaved] = useState<Saved[]>(loadSaved);
-  const [view, setView] = useState<'brief' | 'screener' | 'backtest'>('brief');
+  const [view, setView] = useState<'brief' | 'screener' | 'news' | 'backtest'>('brief');
   const [watchlist, saveWatchlist] = useWatchlist();
   const [briefScreens, saveBriefScreens] = useBriefScreens();
   const [watchOnly, setWatchOnly] = useState(false);
   const [briefKey, setBriefKey] = useState(0);
+  const [theme, nextTheme] = useTheme();
   const [syncing, setSyncing] = useState(false);
   const [syncMsg, setSyncMsg] = useState<string | null>(null);
 
@@ -112,6 +118,24 @@ export default function App() {
     [data, filters, sort, watchOnly, watchlist],
   );
   const selectedRow = useMemo(() => data?.rows.find((r) => r.s === selected) ?? null, [data, selected]);
+  const visible = useMemo(() => rows.slice(0, shown), [rows, shown]);
+
+  // ↑/↓ steps through the results while a stock is open in the Screener
+  useEffect(() => {
+    if (view !== 'screener' || !selected) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowDown' && e.key !== 'ArrowUp') return;
+      if (/^(INPUT|TEXTAREA|SELECT)$/.test((e.target as HTMLElement).tagName)) return;
+      const i = visible.findIndex((r) => r.s === selected);
+      const next = visible[i + (e.key === 'ArrowDown' ? 1 : -1)];
+      if (i < 0 || !next) return;
+      e.preventDefault();
+      setSelected(next.s);
+      document.querySelector(`tr[data-s="${CSS.escape(next.s)}"]`)?.scrollIntoView({ block: 'nearest' });
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [view, selected, visible]);
   const closeDetail = useCallback(() => setSelected(null), []);
 
   const toggleWatch = (s: string) => {
@@ -122,10 +146,8 @@ export default function App() {
       return next;
     });
   };
-  const openStock = useCallback((s: string) => {
-    setSelected(s);
-    setView('screener');
-  }, []);
+  const openStock = useCallback((s: string) => setSelected(s), []);
+  const rowOf = useMemo(() => new Map((data?.rows ?? []).map((r) => [r.s, r])), [data]);
 
   const update = (patch: Partial<Filters>) => {
     setFilters((f) => ({ ...f, ...patch }));
@@ -208,30 +230,38 @@ export default function App() {
   if (!data) return <div className="empty-app">Loading…</div>;
 
   return (
-    <div className={`app ${selectedRow && view === 'screener' ? 'with-detail' : ''}`}>
+    <div className={`app view-${view} ${selectedRow && view === 'screener' ? 'with-detail' : ''}`}>
       <header className="top">
-        <h1>
-          NSE Screener <span>End-of-day · {data.rows.length.toLocaleString('en-IN')} stocks</span>
-        </h1>
-        <div className="seg tabs" role="tablist">
-          <button role="tab" aria-selected={view === 'brief'} className={view === 'brief' ? 'on' : ''} onClick={() => setView('brief')}>
-            Brief
-          </button>
-          <button role="tab" aria-selected={view === 'screener'} className={view === 'screener' ? 'on' : ''} onClick={() => setView('screener')}>
-            Screener
-          </button>
-          <button role="tab" aria-selected={view === 'backtest'} className={view === 'backtest' ? 'on' : ''} onClick={() => setView('backtest')}>
-            Backtest
-          </button>
+        <div className="brand">
+          <span className="logo" aria-hidden>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 17l5-6 4 3 6-9" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /><circle cx="18" cy="5" r="2.2" fill="currentColor" /></svg>
+          </span>
+          <h1>NSE Screener</h1>
         </div>
+        <nav className="tabs" role="tablist" aria-label="Sections">
+          {([['brief', 'Brief'], ['screener', 'Screener'], ['news', 'News'], ['backtest', 'Backtest']] as const).map(([id, label]) => (
+            <button key={id} role="tab" aria-selected={view === id} className={view === id ? 'on' : ''} onClick={() => setView(id)}>
+              <Icon name={id} />
+              {label}
+            </button>
+          ))}
+        </nav>
+        <StockSearch rows={data.rows} onPick={openStock} />
         <div className="top-right">
           {syncMsg && <span className="muted">{syncMsg}</span>}
-          <span className="asof">Data as of {fmtDate(data.asOf)}</span>
+          <span className="asof" title={`${data.rows.length.toLocaleString('en-IN')} stocks · end-of-day data`}>
+            <i />
+            {fmtDate(data.asOf)} close
+          </span>
           {!HOSTED && (
-            <button onClick={refresh} disabled={syncing}>
-              {syncing ? 'Refreshing…' : 'Refresh data'}
+            <button className="ghost" onClick={refresh} disabled={syncing} title="Download the latest NSE session and rebuild the brief">
+              <span className={syncing ? 'spin' : ''}><Icon name="refresh" /></span>
+              {syncing ? 'Refreshing…' : 'Refresh'}
             </button>
           )}
+          <button className="ghost square" onClick={nextTheme} aria-label={`Theme: ${theme}. Click to change.`} title={`Theme: ${theme}`}>
+            <Icon name={theme === 'auto' ? 'auto' : theme === 'dark' ? 'moon' : 'sun'} />
+          </button>
         </div>
       </header>
 
@@ -244,9 +274,13 @@ export default function App() {
           onSaveScreens={saveBriefScreens}
           current={filters}
           onOpenStock={openStock}
+          rowOf={rowOf}
+          onGoScreener={() => setView('screener')}
           onOpenFilters={(f) => { setFilters({ ...EMPTY, ...f }); setPreset(null); setWatchOnly(false); setShown(PAGE); setView('screener'); }}
         />
       )}
+
+      {view === 'news' && <News key={briefKey} watchlist={watchlist} rowOf={rowOf} onOpenStock={openStock} />}
 
       {view === 'backtest' && (
         <Backtest
@@ -261,14 +295,15 @@ export default function App() {
           <h3>Screens</h3>
           <ul className="presets">
             <li>
-              <button className={preset === 'watch' ? 'on' : ''} onClick={showWatchlist}>
-                ★ Watchlist <small>{Object.keys(watchlist).length}</small>
+              <button className={`watch ${preset === 'watch' ? 'on' : ''}`} onClick={showWatchlist}>
+                <span>★ Watchlist</span> <small>{Object.keys(watchlist).length}</small>
               </button>
             </li>
             {PRESETS.map((p) => (
               <li key={p.id}>
                 <button className={preset === p.id ? 'on' : ''} onClick={() => applyPreset(p.id)} title={p.blurb}>
-                  {p.label}
+                  <span>{p.label}</span>
+                  {preset === p.id && p.id !== 'all' && <em>{p.blurb}</em>}
                 </button>
               </li>
             ))}
@@ -315,9 +350,15 @@ export default function App() {
             ))}
           </div>
 
-          {FIELD_GROUPS.map((g) => (
-            <fieldset key={g.title}>
-              <legend>{g.title}</legend>
+          {FIELD_GROUPS.map((g, gi) => {
+            const active = g.fields.filter((f) => filters.ranges[f.key]).length;
+            return (
+            <details className="group" key={g.title} open={active > 0 || gi === 0}>
+              <summary>
+                <Icon name="chevron" size={12} />
+                {g.title}
+                {active > 0 && <em>{active}</em>}
+              </summary>
               {g.fields.map((f) => {
                 const r = filters.ranges[f.key];
                 return (
@@ -331,8 +372,9 @@ export default function App() {
                   </div>
                 );
               })}
-            </fieldset>
-          ))}
+            </details>
+            );
+          })}
         </section>
       </nav>}
 
@@ -340,7 +382,7 @@ export default function App() {
         <div className="toolbar">
           <input
             type="search"
-            placeholder="Search symbol or company"
+            placeholder="Filter these results"
             value={filters.q}
             onChange={(e) => update({ q: e.target.value })}
             aria-label="Search"
@@ -360,9 +402,11 @@ export default function App() {
             <b>{rows.length.toLocaleString('en-IN')}</b> {rows.length === 1 ? 'match' : 'matches'}
           </span>
           <button onClick={() => setView('backtest')} disabled={criteria === 0} title="See how this screen would have done over the last three years">
-            Backtest this screen
+            <Icon name="backtest" /> Backtest this screen
           </button>
-          <button onClick={exportCsv} disabled={!rows.length}>Export CSV</button>
+          <button onClick={exportCsv} disabled={!rows.length} title="Download these results as a spreadsheet">
+            <Icon name="download" /> CSV
+          </button>
         </div>
 
         {(activePreset || criteria > 0) && (
@@ -404,8 +448,8 @@ export default function App() {
               </tr>
             </thead>
             <tbody>
-              {rows.slice(0, shown).map((r) => (
-                <tr key={r.s} className={r.s === selected ? 'sel' : ''} onClick={() => setSelected(r.s === selected ? null : r.s)}>
+              {visible.map((r) => (
+                <tr key={r.s} data-s={r.s} className={r.s === selected ? 'sel' : ''} onClick={() => setSelected(r.s === selected ? null : r.s)}>
                   <td className="sym">
                     <button
                       className={`star ${watchlist[r.s] ? 'on' : ''}`}
@@ -419,6 +463,8 @@ export default function App() {
                     {r.newHi === 1 && <mark className="hi" title="New 52-week high today">52W H</mark>}
                     {r.newLo === 1 && <mark className="lo" title="New 52-week low today">52W L</mark>}
                     {r.nextEx && <mark className="ex" title={`${r.nextEx.text}, ex-date ${fmtDate(r.nextEx.ex)}`}>EX {fmtDate(r.nextEx.ex, false)}</mark>}
+                    {r.bm?.results && <mark className="res" title={`Board meeting to consider results on ${fmtDate(r.bm.date)}`}>RESULTS {fmtDate(r.bm.date, false)}</mark>}
+                    {r.ban === 1 && <mark className="lo" title="In the F&O ban period: no new derivative positions allowed">BAN</mark>}
                     <small>
                       {r.name}
                       {r.idx && ` · ${IDX_LABEL[r.idx]}`}
@@ -434,6 +480,7 @@ export default function App() {
           </table>
           {rows.length === 0 && (
             <div className="none">
+              <Icon name="filter" size={28} />
               <p>{watchOnly && Object.keys(watchlist).length === 0 ? 'Your watchlist is empty. Click the ☆ next to any stock to add it.' : 'No stocks match these criteria.'}</p>
               <button onClick={() => applyPreset('all')}>Show all stocks</button>
             </div>
@@ -445,12 +492,16 @@ export default function App() {
           )}
         </div>
         <footer>
-          Source: NSE end-of-day bhavcopy archive · {data.sessions} sessions loaded. Not investment advice.
+          <span>Source: NSE end-of-day archive · {data.rows.length.toLocaleString('en-IN')} stocks · {data.sessions} sessions. Not investment advice.</span>
+          <span className="keys"><kbd>/</kbd> find a stock · <kbd>↑</kbd><kbd>↓</kbd> step through results · <kbd>Esc</kbd> close</span>
         </footer>
       </main>}
 
-      {selectedRow && view === 'screener' && (
+      {selectedRow && view !== 'screener' && <div className="scrim" onClick={closeDetail} />}
+      {selectedRow && (
         <Detail
+          key={view === 'screener' ? 'docked' : 'floating'}
+          floating={view !== 'screener'}
           row={selectedRow}
           onClose={closeDetail}
           watch={watchlist[selectedRow.s] ?? null}

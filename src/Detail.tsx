@@ -1,10 +1,16 @@
 import { useEffect, useState } from 'react';
 import { Chart } from './Chart';
 import { NumInput } from './NumInput';
+import { Delta } from './ui';
 import type { WatchItem } from './user';
-import { CAP_LABEL, IDX_LABEL, fmtMcap, fileSafe, fmtCr, fmtDate, fmtPct, fmtPrice, fmtQty, type History, type Row } from './data';
+import { BUILD_LABEL, CAP_LABEL, IDX_LABEL, fmtMcap, fileSafe, fmtCr, fmtDate, fmtPct, fmtPrice, fmtQty, type History, type Row } from './data';
 
 const tone = (v: number | null) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
+
+interface Filed {
+  filings: { date: number; subject: string; text: string; key: boolean }[];
+  meetings: { date: number; purpose: string; results: boolean }[];
+}
 
 function Stat({ label, value, cls = '' }: { label: string; value: string; cls?: string }) {
   return (
@@ -15,8 +21,10 @@ function Stat({ label, value, cls = '' }: { label: string; value: string; cls?: 
   );
 }
 
-export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch }: {
+export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch, floating = false }: {
   row: Row;
+  /** Shown as an overlay drawer instead of a docked column */
+  floating?: boolean;
   onClose: () => void;
   watch: WatchItem | null;
   onToggleWatch: () => void;
@@ -24,6 +32,7 @@ export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch }: {
 }) {
   const [hist, setHist] = useState<History | null>(null);
   const [error, setError] = useState(false);
+  const [filed, setFiled] = useState<Filed | null>(null);
 
   useEffect(() => {
     setHist(null);
@@ -37,6 +46,16 @@ export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch }: {
   }, [row.s]);
 
   useEffect(() => {
+    setFiled(null);
+    let live = true;
+    fetch(`/data/n/${fileSafe(row.s)}.json`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((f) => live && setFiled(f))
+      .catch(() => {});
+    return () => void (live = false);
+  }, [row.s]);
+
+  useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
@@ -46,7 +65,7 @@ export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch }: {
   const short = row.sessions < 252;
 
   return (
-    <aside className="detail" aria-label={`${row.s} details`}>
+    <aside className={`detail ${floating ? 'floating' : ''}`} aria-label={`${row.s} details`}>
       <header>
         <div>
           <h2>{row.s}</h2>
@@ -86,7 +105,8 @@ export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch }: {
 
       <div className="quote">
         <strong>₹{fmtPrice(row.close)}</strong>
-        <b className={tone(row.chg)}>{fmtPct(row.chg, 2)}</b>
+        <Delta value={row.chg} />
+        <span className="muted">today</span>
       </div>
 
       {hist ? <Chart hist={hist} /> : <div className="chart-empty">{error ? 'Price history unavailable.' : 'Loading chart…'}</div>}
@@ -125,6 +145,45 @@ export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch }: {
         <Stat label="Dividend yield" value={row.divY == null ? '–' : `${row.divY.toFixed(2)}%`} />
         <Stat label="Next ex-date" value={row.nextEx ? fmtDate(row.nextEx.ex) : 'None announced'} />
       </div>
+
+      {row.fo === 1 && (
+        <>
+          <h3>Derivatives</h3>
+          <div className="stats">
+            <Stat label="Futures OI today" value={fmtPct(row.foOiChg)} cls={tone(row.foOiChg)} />
+            <Stat label="Futures OI, 5 sessions" value={fmtPct(row.oi5)} cls={tone(row.oi5)} />
+            <Stat label="Position today" value={row.build ? BUILD_LABEL[row.build] : 'No clear change'} cls={row.build ? (row.build === 'LB' || row.build === 'SC' ? 'up' : 'down') : ''} />
+            <Stat label="Put/call ratio" value={row.pcr == null ? '–' : row.pcr.toFixed(2)} />
+            <Stat label="Implied volatility" value={row.iv == null ? '–' : `${row.iv.toFixed(1)}%`} />
+            <Stat label="IV rank (1 year)" value={row.ivRank == null ? '–' : `${row.ivRank.toFixed(0)} of 100`} />
+          </div>
+          {row.ban === 1 && <p className="note down">In the F&O ban period: no new derivative positions are allowed until open interest falls.</p>}
+        </>
+      )}
+
+      {filed && (filed.meetings.length > 0 || filed.filings.length > 0) && (
+        <>
+          <h3>Filings and events</h3>
+          <ul className="acts filings">
+            {filed.meetings.filter((m) => m.date >= (hist?.d[hist.d.length - 1] ?? 0)).map((m) => (
+              <li key={`m${m.date}`} className="upcoming">
+                <span>{fmtDate(m.date)}</span>
+                <div>Board meeting: {m.purpose}</div>
+                <em>upcoming</em>
+              </li>
+            ))}
+            {filed.filings.slice(0, 12).map((f, i) => (
+              <li key={i} className={f.key ? 'key' : ''}>
+                <span>{fmtDate(f.date)}</span>
+                <div>
+                  <b>{f.subject}</b>
+                  <p>{f.text}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
 
       <h3>Returns</h3>
       <div className="stats">

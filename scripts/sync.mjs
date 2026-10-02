@@ -8,7 +8,9 @@
 import { mkdir, readFile, writeFile, stat, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
+import { buildNews, fetchFilings, loadFilings } from './news.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = path.join(ROOT, 'data/raw');
@@ -385,6 +387,10 @@ export async function sync({ log = console.log } = {}) {
   log('Fetching corporate actions, market cap and P/E…');
   await fetchExtras(log, LOOKBACK_CALENDAR_DAYS + 400); // dividend yield and earnings growth look a year back
   const fund = await loadFundamentals();
+  log('Fetching derivatives and filings…');
+  await fetchDerivatives(log, LOOKBACK_CALENDAR_DAYS + 400); // IV rank looks a year back
+  const deriv = await loadDerivatives();
+  await fetchFilings(log);
 
   log('Loading reference lists…');
   const master = await cachedList('EQUITY_L', 7, log);
@@ -394,6 +400,8 @@ export async function sync({ log = console.log } = {}) {
   for (const [code, , list] of INDICES) {
     for (const r of await cachedList(list, 7, log)) membership.set(r.Symbol, code);
   }
+
+  const filings = await loadFilings(names);
 
   log('Computing metrics…');
   const { bySymbol, dates } = await loadHistory(files);
@@ -414,6 +422,9 @@ export async function sync({ log = console.log } = {}) {
     if (ca.length) adjusted++;
     const fs = fundamentalSeries(symbol, bars, ca, fund);
     const at = bars.length - 1;
+    const ds = derivativeSeries(symbol, bars, deriv);
+    const inFo = ds.any && deriv.days.get(latest)?.stocks[symbol] != null;
+    const filed = filings.get(symbol);
     const pe = r2(fs.pe[at]);
     // dividends, splits, bonuses etc. from the last year, plus anything announced ahead
     const acts = [...new Map(actions.filter((a) => a.ex > latest - 10000).map((a) => [`${a.ex}|${a.text}`, { ex: a.ex, text: a.text }])).values()];
@@ -429,6 +440,18 @@ export async function sync({ log = console.log } = {}) {
       epsG: r1(fs.epsG[at]),
       divY: r2(fs.divY[at]),
       nextEx: acts.find((a) => a.ex > latest) ?? null,
+      // derivatives (F&O stocks only)
+      fo: inFo ? 1 : 0,
+      foOiChg: inFo ? r1(ds.m.foOiChg[at]) : null,
+      oi5: inFo ? r1(ds.m.oi5[at]) : null,
+      pcr: inFo ? r2(ds.m.pcr[at]) : null,
+      iv: inFo ? r1(ds.m.iv[at]) : null,
+      ivRank: inFo ? r1(ds.m.ivRank[at]) : null,
+      build: !inFo ? null : ds.f.longBuild[at] ? 'LB' : ds.f.shortBuild[at] ? 'SB' : ds.f.shortCover[at] ? 'SC' : ds.f.longUnwind[at] ? 'LU' : null,
+      ban: deriv.ban.includes(symbol) ? 1 : 0,
+      // filings
+      bm: filed?.meetings.find((m) => m.date >= latest) ?? null,
+      filed: (filed?.filings ?? []).filter((f) => f.key && f.date === latest).slice(0, 3).map((f) => f.subject),
       ca: ca.length,
     });
     await writeFile(
@@ -457,6 +480,8 @@ export async function sync({ log = console.log } = {}) {
     r.cap = r.mcap == null ? null : i < 100 ? 'L' : i < 250 ? 'M' : 'S';
   });
   rows.sort((a, b) => (b.avgTurnover ?? 0) - (a.avgTurnover ?? 0));
+
+  await buildNews({ names, filings, asOf: latest, log });
 
   const meta = {
     asOf: latest,

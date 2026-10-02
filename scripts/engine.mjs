@@ -8,6 +8,7 @@
 // the average liquid stock bought the same day and simply held for `hold`
 // sessions, so a rising market doesn't flatter a screen.
 
+import { derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
 import { adjust, cachedList, fetchDays, loadHistory, rankTo99, rsScore } from './sync.mjs';
 
@@ -19,9 +20,12 @@ const METRICS = [
   'close', 'chg', 'w1', 'm1', 'm3', 'm6', 'y1', 'fromHi', 'fromLo',
   'vs20', 'vs50', 'vs200', 'rsi', 'volX', 'deliv', 'avgTurnover', 'rs',
   'mcap', 'pe', 'epsG', 'divY',
+  'foOiChg', 'oi5', 'pcr', 'iv', 'ivRank',
 ];
-const COMPUTED = METRICS.slice(0, -4); // the last four come from fundamentalSeries()
-const FLAGS = ['newHi', 'newLo', 'golden', 'death'];
+// the rest are filled in by fundamentalSeries() and derivativeSeries()
+const COMPUTED = METRICS.slice(0, METRICS.indexOf('mcap'));
+const PRICE_FLAGS = ['newHi', 'newLo', 'golden', 'death'];
+const FLAGS = [...PRICE_FLAGS, 'longBuild', 'shortBuild', 'shortCover', 'longUnwind'];
 const INDEX_LISTS = [
   ['N50', 'ind_nifty50list'],
   ['NN50', 'ind_niftynext50list'],
@@ -38,6 +42,7 @@ const UNIVERSES = {
   N500: (i) => i != null && i !== 'MIC250',
   MIC250: (i) => i === 'MIC250',
   OTHER: (i) => i == null,
+  FNO: (i, sym) => sym.fo,
 };
 
 const pct = (a, b) => (b ? (a / b - 1) * 100 : NaN);
@@ -47,7 +52,7 @@ const pct = (a, b) => (b ? (a / b - 1) * 100 : NaN);
 function columns(bars) {
   const n = bars.length;
   const m = Object.fromEntries(COMPUTED.map((k) => [k, new Float32Array(n).fill(NaN)]));
-  const f = Object.fromEntries(FLAGS.map((k) => [k, new Uint8Array(n)]));
+  const f = Object.fromEntries(PRICE_FLAGS.map((k) => [k, new Uint8Array(n)]));
   const c = bars.map((b) => b.c);
   const ps = [0];
   for (const x of c) ps.push(ps[ps.length - 1] + x);
@@ -119,6 +124,8 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
   const files = await fetchDays(log, lookback);
   await fetchExtras(log, lookback);
   const fund = await loadFundamentals();
+  await fetchDerivatives(log, lookback);
+  const deriv = await loadDerivatives();
   const master = new Set((await cachedList('EQUITY_L', 7, log)).map((r) => r.SYMBOL));
   const sectors = new Map(
     (await cachedList('ind_niftytotalmarket_list', 7, log)).map((r) => [r.Symbol, r.Industry]),
@@ -141,8 +148,12 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
     const events = adjust(bars, fund.actions.get(symbol) ?? [], fund.faceValue.get(symbol) ?? 0);
     const cols = columns(bars);
     Object.assign(cols.m, fundamentalSeries(symbol, bars, events, fund));
+    const ds = derivativeSeries(symbol, bars, deriv);
+    Object.assign(cols.m, ds.m);
+    Object.assign(cols.f, ds.f);
     symbols.push({
       s: symbol,
+      fo: ds.any,
       idx: membership.get(symbol) ?? null,
       sector: sectors.get(symbol) ?? null,
       n: bars.length,
@@ -166,7 +177,7 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
   for (const items of byDate.values()) {
     for (const [code, rank] of rankTo99(items)) symbols[Math.floor(code / 4096)].m.rs[code % 4096] = rank;
   }
-  return { dates, symbols, base: new Map() };
+  return { dates, symbols, deriv, base: new Map() };
 }
 
 // date -> average buy-and-hold return of every liquid stock over `hold` sessions
@@ -195,7 +206,7 @@ export function compile(filters = {}) {
   const inUniverse = UNIVERSES[filters.universe] ?? (() => true);
   return {
     empty: !flags.length && !ranges.length,
-    symbol: (sym) => inUniverse(sym.idx) && (!filters.sector || sym.sector === filters.sector),
+    symbol: (sym) => inUniverse(sym.idx, sym) && (!filters.sector || sym.sector === filters.sector),
     row(sym, t) {
       for (const k of flags) if (!sym.f[k][t]) return false;
       for (const [k, min, max] of ranges) {

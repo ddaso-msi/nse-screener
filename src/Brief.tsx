@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { HOSTED, describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters } from './data';
-import { Market, type MarketData } from './Market';
+import { HOSTED, describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters, type Row } from './data';
+import { BreadthMeter, Market, type MarketData } from './Market';
+import { Delta, Icon, Meter, Spark, tone } from './ui';
 import type { BriefScreen, Watchlist } from './user';
 
 interface Card {
@@ -55,11 +56,18 @@ interface BriefData {
   logTotal: number;
 }
 
-const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 const x1 = (v: number | null | undefined, suffix = '') => (v == null ? '–' : `${v.toFixed(1)}${suffix}`);
 const alertText = (a: Alert) => (a.ex ? a.text.replace(String(a.ex), fmtDate(a.ex)) : a.text);
 
-export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, current, onOpenStock, onOpenFilters }: {
+const PREVIEW = 8; // rows shown per screen before "Show all"
+
+function weekday(key: number) {
+  return new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100).toLocaleDateString('en-IN', { weekday: 'long' });
+}
+
+export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, current, onOpenStock, onOpenFilters, rowOf, onGoScreener }: {
+  rowOf: Map<string, Row>;
+  onGoScreener: () => void;
   watchlist: Watchlist;
   onToggleWatch: (s: string) => void;
   screens: BriefScreen[];
@@ -72,6 +80,7 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
   const [missing, setMissing] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const load = useCallback(() => {
     fetch(`/data/brief.json?t=${Date.now()}`)
@@ -127,6 +136,12 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
   const stale = watchKeys.length !== inBrief.size || watchKeys.some((s) => !inBrief.has(s)) || notesDiffer || screensDiffer;
   const withAlerts = brief.watchlist.filter((w) => w.alerts.length > 0).length;
   const totalNew = brief.screens.reduce((n, s) => n + s.fresh.length, 0);
+  const m = brief.market;
+
+  const moved = m ? m.advancers + m.decliners : 0;
+  const fell = moved ? m!.decliners / moved : 0.5;
+  const headline = !m ? 'Your evening brief' : fell >= 0.6 ? 'Most stocks fell today.' : fell <= 0.4 ? 'Most stocks rose today.' : 'A mixed day for the market.';
+  const jump = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   const star = (s: string) => (
     <button
@@ -141,212 +156,260 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
 
   return (
     <div className="bt brief">
-      <div className="bt-head">
-        <div>
-          <h2>Evening brief · {fmtDate(brief.asOf)}</h2>
-          <p>
-            {totalNew} new {totalNew === 1 ? 'match' : 'matches'} across {brief.screens.length} screens · {withAlerts} of {brief.watchlist.length} watchlist stocks with something to note
-          </p>
-        </div>
-        <div className="brief-actions">
-          {stale && <span className="muted">Your watchlist or screens changed.{HOSTED && ' The brief picks this up on its next evening run.'}</span>}
-          {!HOSTED && <button onClick={rebuild} disabled={busy} className={stale ? 'primary' : ''}>{busy ? 'Updating…' : 'Update brief'}</button>}
-        </div>
-      </div>
-      {error && <p className="note down">{error}</p>}
-
-      {brief.market && <Market market={brief.market} />}
-
-      <h3>Watchlist</h3>
-      {brief.watchlist.length === 0 ? (
-        <p className="note">Nothing on your watchlist yet. Click the ☆ next to any stock here or in the Screener, then set a note and an alert level from its detail panel.</p>
-      ) : (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th className="sym">Stock</th>
-                <th>Price</th>
-                <th>Day</th>
-                <th title="Change since the session you added it">Since added</th>
-                <th title="Your alert level and how far the price is from it">Your level</th>
-                <th className="left">Today</th>
-                <th className="left">Your note</th>
-              </tr>
-            </thead>
-            <tbody>
-              {brief.watchlist.map((w) => (
-                <tr key={w.s} onClick={() => onOpenStock(w.s)}>
-                  <td className="sym">{star(w.s)}<b>{w.s}</b><small>{w.name ?? 'Not traded in the latest session'}</small></td>
-                  <td>{fmtPrice(w.close)}</td>
-                  <td className={tone(w.chg)}>{fmtPct(w.chg, 2)}</td>
-                  <td className={tone(w.sinceAdded)}>{fmtPct(w.sinceAdded)}</td>
-                  <td>{w.level == null ? '–' : <>₹{fmtPrice(w.level)} <small className="muted">{fmtPct(w.toLevel)} away</small></>}</td>
-                  <td className="left wrap">
-                    {w.alerts.length === 0 ? <span className="muted">Nothing notable</span> : w.alerts.map((a) => (
-                      <span key={a.text} className={`alert ${a.kind}`}>{a.kind === 'up' ? '▲' : a.kind === 'down' ? '▼' : '•'} {alertText(a)}</span>
-                    ))}
-                  </td>
-                  <td className="left wrap muted">{w.note}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {brief.screens.map((sc) => (
-        <section key={sc.id}>
-          <div className="screen-head">
-            <h3>{sc.label} <small>{sc.fresh.length} new today · {sc.total} matching in all</small></h3>
-            <div>
-              <button className="link" onClick={() => onOpenFilters({ ...EMPTY, ...sc.filters })}>Open in Screener</button>
-              <button className="link" onClick={() => onSaveScreens((screens.length ? screens : brief.screens).filter((x) => x.id !== sc.id).map(({ id, label, filters }) => ({ id, label, filters })))}>Remove from brief</button>
-            </div>
-          </div>
-          <p className="note">{describeFilters({ ...EMPTY, ...sc.filters }).join(' · ')}</p>
-          {sc.fresh.length === 0 ? (
-            <p className="note">No new matches today.</p>
-          ) : (
-            <div className="table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th className="sym">Stock</th>
-                    <th>Price</th>
-                    <th>Day</th>
-                    <th title="Volume vs 20-session average">Vol ×</th>
-                    <th title="Delivery percentage">Deliv</th>
-                    <th>RSI</th>
-                    <th title="Relative strength, 1–99">RS</th>
-                    <th title="Price vs 50-day average">vs 50D</th>
-                    <th title="Price vs 200-day average">vs 200D</th>
-                    <th title="52-week high and distance from it">52W high</th>
-                    <th title="Lowest low of the last 10 sessions, a common place for a stop">10-day low</th>
-                    <th>M.Cap</th>
-                    <th>P/E</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sc.fresh.map((c) => (
-                    <tr key={c.s} onClick={() => onOpenStock(c.s)}>
-                      <td className="sym">
-                        {star(c.s)}<b>{c.s}</b>
-                        {c.nextEx && <mark className="ex" title={`${c.nextEx.text}, ex-date ${fmtDate(c.nextEx.ex)}`}>EX {fmtDate(c.nextEx.ex, false)}</mark>}
-                        <small>{c.name}</small>
-                      </td>
-                      <td>{fmtPrice(c.close)}</td>
-                      <td className={tone(c.chg)}>{fmtPct(c.chg, 2)}</td>
-                      <td>{x1(c.volX, '×')}</td>
-                      <td>{c.deliv == null ? '–' : `${c.deliv.toFixed(0)}%`}</td>
-                      <td>{c.rsi == null ? '–' : c.rsi.toFixed(0)}</td>
-                      <td>{c.rs ?? '–'}</td>
-                      <td className={tone(c.vs50)}>{fmtPct(c.vs50)}</td>
-                      <td className={tone(c.vs200)}>{fmtPct(c.vs200)}</td>
-                      <td>{fmtPrice(c.hi52)} <small className="muted">{fmtPct(c.fromHi)}</small></td>
-                      <td>{fmtPrice(c.low10)} <small className="muted">{c.low10 ? fmtPct((c.low10 / c.close - 1) * 100) : ''}</small></td>
-                      <td>{fmtMcap(c.mcap)}</td>
-                      <td>{c.pe == null ? '–' : c.pe.toFixed(1)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-          {sc.dropped.length > 0 && (
-            <p className="note dropped">
-              No longer matching ({sc.dropped.length}):{' '}
-              {sc.dropped.slice(0, 40).map((s) => (
-                <button key={s} className="link" onClick={() => onOpenStock(s)}>{s}</button>
-              ))}
-              {sc.dropped.length > 40 && ` and ${sc.dropped.length - 40} more`}
+      <header className="hero">
+        <div className="hero-text">
+          <p className="eyebrow">Evening brief · {weekday(brief.asOf)}, {fmtDate(brief.asOf)}</p>
+          <h2>{headline}</h2>
+          {m && (
+            <p className="lede">
+              {m.decliners.toLocaleString('en-IN')} of {m.liquid.toLocaleString('en-IN')} liquid stocks declined and the median stock moved{' '}
+              <b className={tone(m.medianChg)}>{fmtPct(m.medianChg, 2)}</b>. There were {m.newHi} new 52-week highs against {m.newLo} new lows.
             </p>
           )}
-        </section>
-      ))}
-      <p className="note">
-        <button className="link first" onClick={addCurrent} disabled={currentCriteria === 0}>
-          + Add the criteria currently set in the Screener to the brief
-        </button>
-        {currentCriteria === 0 && ' (set some criteria in the Screener first)'}
-      </p>
+          <div className="hero-chips">
+            <button onClick={() => jump('watchlist')}>
+              <b>{withAlerts}</b> watchlist {withAlerts === 1 ? 'alert' : 'alerts'}
+            </button>
+            <button onClick={() => jump(`screen-${brief.screens[0]?.id}`)}>
+              <b>{totalNew}</b> new screen {totalNew === 1 ? 'match' : 'matches'}
+            </button>
+            <button onClick={() => jump('log')}>
+              <b>{brief.logTotal}</b> in the forward log
+            </button>
+          </div>
+        </div>
+        {m && <BreadthMeter market={m} />}
+      </header>
 
-      <h3>Forward log <small>{brief.logTotal} matches recorded since {brief.log.length ? fmtDate(brief.log[brief.log.length - 1].date) : '–'}</small></h3>
-      <p className="note">
-        Every new match is recorded on the day it happens, then scored: bought at the next open, compared with the average liquid stock over the same sessions. Results appear once 5, 10 and 20 sessions have passed.
-      </p>
-      <div className="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th className="sym">Screen</th>
-              <th>Logged</th>
-              {[5, 10, 20].map((h) => (
-                <th key={h} colSpan={3} className="group">After {h} sessions</th>
-              ))}
-            </tr>
-            <tr className="sub">
-              <th className="sym" />
-              <th />
-              {[5, 10, 20].flatMap((h) => [<th key={`a${h}`}>Avg</th>, <th key={`m${h}`}>Market</th>, <th key={`w${h}`}>Win rate</th>])}
-            </tr>
-          </thead>
-          <tbody>
-            {brief.scoreboard.map((sb) => (
-              <tr key={sb.id} className="static">
-                <td className="sym"><b>{sb.label}</b></td>
-                <td>{sb.logged}</td>
-                {([sb.h5, sb.h10, sb.h20] as (Outcome | null)[]).flatMap((o, i) =>
-                  o
-                    ? [
-                        <td key={`a${i}`} className={tone(o.avg)} title={`${o.n} completed`}>{fmtPct(o.avg, 2)}</td>,
-                        <td key={`m${i}`}>{fmtPct(o.market, 2)}</td>,
-                        <td key={`w${i}`}>{o.win.toFixed(0)}%</td>,
-                      ]
-                    : [<td key={`a${i}`} colSpan={3} className="muted center">not yet</td>],
+      <nav className="subnav" aria-label="Brief sections">
+        {m && <button onClick={() => jump('market')}>Market</button>}
+        <button onClick={() => jump('watchlist')}>Watchlist <em>{brief.watchlist.length}</em></button>
+        {brief.screens.map((sc) => (
+          <button key={sc.id} onClick={() => jump(`screen-${sc.id}`)}>{sc.label} <em>{sc.fresh.length}</em></button>
+        ))}
+        <button onClick={() => jump('log')}>Forward log</button>
+        <span className="subnav-right">
+          {stale && <span className="muted">Your watchlist or screens changed.{HOSTED && ' The brief picks this up on its next evening run.'}</span>}
+          {!HOSTED && (
+            <button className={stale ? 'primary' : 'plain'} onClick={rebuild} disabled={busy}>
+              <span className={busy ? 'spin' : ''}><Icon name="refresh" /></span> {busy ? 'Updating…' : 'Update brief'}
+            </button>
+          )}
+        </span>
+      </nav>
+      {error && <p className="note down">{error}</p>}
+
+      {m && <Market market={m} />}
+
+      <section id="watchlist">
+        <h3>Watchlist <small>{withAlerts} of {brief.watchlist.length} with something to note</small></h3>
+        {brief.watchlist.length === 0 ? (
+          <div className="empty-card">
+            <span className="big-star">★</span>
+            <div>
+              <b>Start a watchlist</b>
+              <p>Star any stock to follow it here. Add a note and a price level from its panel, and the brief will tell you when it crosses the level, hits a 52-week high or low, or has an ex-date coming.</p>
+            </div>
+            <button className="primary" onClick={onGoScreener}>Find stocks <Icon name="arrowRight" /></button>
+          </div>
+        ) : (
+          <div className="cards">
+            {brief.watchlist.map((w) => (
+              <article key={w.s} className={`card ${w.alerts.length ? 'has-alerts' : ''}`} onClick={() => onOpenStock(w.s)} tabIndex={0} onKeyDown={(e) => e.key === 'Enter' && onOpenStock(w.s)}>
+                <header>
+                  <div>
+                    {star(w.s)}<b>{w.s}</b>
+                    <small>{w.name ?? 'Not traded in the latest session'}</small>
+                  </div>
+                  <Spark data={rowOf.get(w.s)?.spark} width={84} height={30} />
+                </header>
+                <div className="card-price">
+                  <strong>{w.close == null ? '–' : `₹${fmtPrice(w.close)}`}</strong>
+                  <Delta value={w.chg} />
+                  {w.sinceAdded != null && <span className="muted">{fmtPct(w.sinceAdded)} since added</span>}
+                </div>
+                {w.level != null && (
+                  <p className="card-level">
+                    Your level ₹{fmtPrice(w.level)} <span className="muted">· price is {fmtPct(w.toLevel == null ? null : -w.toLevel)} from it</span>
+                  </p>
                 )}
-              </tr>
+                <ul className="card-alerts">
+                  {w.alerts.length === 0 && <li className="muted">Nothing notable today</li>}
+                  {w.alerts.map((a) => (
+                    <li key={a.text} className={a.kind}><i>{a.kind === 'up' ? '▲' : a.kind === 'down' ? '▼' : '•'}</i>{alertText(a)}</li>
+                  ))}
+                </ul>
+                {w.note && <blockquote>{w.note}</blockquote>}
+              </article>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+        )}
+      </section>
 
-      <details>
-        <summary>Recent entries ({Math.min(brief.log.length, 400)})</summary>
+      {brief.screens.map((sc) => {
+        const all = expanded[sc.id];
+        const shown = all ? sc.fresh : sc.fresh.slice(0, PREVIEW);
+        return (
+          <section key={sc.id} id={`screen-${sc.id}`}>
+            <div className="screen-head">
+              <h3>{sc.label} <small>{sc.fresh.length} new today · {sc.total} matching in all</small></h3>
+              <div>
+                <button className="link" onClick={() => onOpenFilters({ ...EMPTY, ...sc.filters })}>Open in Screener</button>
+                <button className="link" onClick={() => onSaveScreens((screens.length ? screens : brief.screens).filter((x) => x.id !== sc.id).map(({ id, label, filters }) => ({ id, label, filters })))}>Remove from brief</button>
+              </div>
+            </div>
+            <div className="criteria">
+              {describeFilters({ ...EMPTY, ...sc.filters }).map((c) => <span key={c}>{c}</span>)}
+            </div>
+            {sc.fresh.length === 0 ? (
+              <p className="note">No new matches today.</p>
+            ) : (
+              <div className="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th className="sym">Stock</th>
+                      <th className="sparkcol">3M trend</th>
+                      <th>Price</th>
+                      <th>Day</th>
+                      <th title="Volume vs 20-session average">Vol ×</th>
+                      <th title="Delivery percentage">Deliv</th>
+                      <th title="Relative strength, 1–99">RS</th>
+                      <th title="Price vs 50-day average">vs 50D</th>
+                      <th title="Price vs 200-day average">vs 200D</th>
+                      <th title="Distance from the 52-week high">From 52W high</th>
+                      <th title="Lowest low of the last 10 sessions, a common place for a stop">10-day low</th>
+                      <th>M.Cap</th>
+                      <th>P/E</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shown.map((c) => (
+                      <tr key={c.s} onClick={() => onOpenStock(c.s)}>
+                        <td className="sym">
+                          {star(c.s)}<b>{c.s}</b>
+                          {c.nextEx && <mark className="ex" title={`${c.nextEx.text}, ex-date ${fmtDate(c.nextEx.ex)}`}>EX {fmtDate(c.nextEx.ex, false)}</mark>}
+                          <small>{c.name}</small>
+                        </td>
+                        <td className="sparkcol"><Spark data={rowOf.get(c.s)?.spark} /></td>
+                        <td>{fmtPrice(c.close)}</td>
+                        <td><Delta value={c.chg} /></td>
+                        <td>{x1(c.volX, '×')}</td>
+                        <td>{c.deliv == null ? '–' : `${c.deliv.toFixed(0)}%`}</td>
+                        <td><Meter value={c.rs} /></td>
+                        <td className={tone(c.vs50)}>{fmtPct(c.vs50)}</td>
+                        <td className={tone(c.vs200)}>{fmtPct(c.vs200)}</td>
+                        <td>{fmtPct(c.fromHi)}</td>
+                        <td>{fmtPrice(c.low10)} <small className="muted">{c.low10 ? fmtPct((c.low10 / c.close - 1) * 100) : ''}</small></td>
+                        <td>{fmtMcap(c.mcap)}</td>
+                        <td>{c.pe == null ? '–' : c.pe.toFixed(1)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {sc.fresh.length > PREVIEW && (
+                  <button className="more" onClick={() => setExpanded((e) => ({ ...e, [sc.id]: !all }))}>
+                    {all ? 'Show fewer' : `Show all ${sc.fresh.length}`}
+                  </button>
+                )}
+              </div>
+            )}
+            {sc.dropped.length > 0 && (
+              <details className="dropped">
+                <summary>{sc.dropped.length} no longer matching</summary>
+                <p>
+                  {sc.dropped.map((s) => (
+                    <button key={s} className="link" onClick={() => onOpenStock(s)}>{s}</button>
+                  ))}
+                </p>
+              </details>
+            )}
+          </section>
+        );
+      })}
+      <button className="add-screen" onClick={addCurrent} disabled={currentCriteria === 0} title={currentCriteria === 0 ? 'Set some criteria in the Screener first' : undefined}>
+        + Follow another screen
+        <small>{currentCriteria === 0 ? 'Set criteria in the Screener, then add them here' : 'Adds the criteria currently set in the Screener'}</small>
+      </button>
+
+      <section id="log">
+        <h3>Forward log <small>{brief.logTotal} matches recorded since {brief.log.length ? fmtDate(brief.log[brief.log.length - 1].date) : '–'}</small></h3>
+        <p className="note">
+          Every new match is recorded on the day it happens, then scored: bought at the next open, compared with the average liquid stock over the same sessions. Results appear once 5, 10 and 20 sessions have passed.
+        </p>
         <div className="table-wrap">
           <table>
             <thead>
               <tr>
-                <th className="sym">Stock</th>
-                <th className="left">Screen</th>
-                <th>Matched</th>
-                <th title="Close on the day it matched">Close</th>
-                <th title="Next session's open">Entry</th>
-                <th title="Entry to the latest close">To date</th>
-                <th>5</th>
-                <th>10</th>
-                <th>20</th>
+                <th className="sym">Screen</th>
+                <th>Logged</th>
+                {[5, 10, 20].map((h) => (
+                  <th key={h} colSpan={3} className="group">After {h} sessions</th>
+                ))}
+              </tr>
+              <tr className="sub">
+                <th className="sym" />
+                <th />
+                {[5, 10, 20].flatMap((h) => [<th key={`a${h}`}>Avg</th>, <th key={`m${h}`}>Market</th>, <th key={`w${h}`}>Win rate</th>])}
               </tr>
             </thead>
             <tbody>
-              {brief.log.map((e) => (
-                <tr key={e.id} onClick={() => onOpenStock(e.s)}>
-                  <td className="sym">{star(e.s)}<b>{e.s}</b></td>
-                  <td className="left">{e.label}</td>
-                  <td>{fmtDate(e.date)}</td>
-                  <td>{fmtPrice(e.close)}</td>
-                  <td>{e.entry == null ? <span className="muted">next open</span> : fmtPrice(e.entry)}</td>
-                  <td className={tone(e.entry == null ? null : e.last)}>{e.entry == null ? '–' : fmtPct(e.last)}</td>
-                  <td className={tone(e.r5)}>{fmtPct(e.r5)}</td>
-                  <td className={tone(e.r10)}>{fmtPct(e.r10)}</td>
-                  <td className={tone(e.r20)}>{fmtPct(e.r20)}</td>
+              {brief.scoreboard.map((sb) => (
+                <tr key={sb.id} className="static">
+                  <td className="sym"><b>{sb.label}</b></td>
+                  <td>{sb.logged}</td>
+                  {([sb.h5, sb.h10, sb.h20] as (Outcome | null)[]).flatMap((o, i) =>
+                    o
+                      ? [
+                          <td key={`a${i}`} className={tone(o.avg)} title={`${o.n} completed`}>{fmtPct(o.avg, 2)}</td>,
+                          <td key={`m${i}`}>{fmtPct(o.market, 2)}</td>,
+                          <td key={`w${i}`}>{o.win.toFixed(0)}%</td>,
+                        ]
+                      : [<td key={`a${i}`} colSpan={3} className="muted center">waiting for {[5, 10, 20][i]} sessions</td>],
+                  )}
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </details>
-      <p className="note">These are stocks that matched rules, not recommendations. The backtests found no rule here that reliably beats the market after costs.</p>
+
+        <details>
+          <summary>Recent entries ({Math.min(brief.log.length, 400)})</summary>
+          <div className="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th className="sym">Stock</th>
+                  <th className="left">Screen</th>
+                  <th>Matched</th>
+                  <th title="Close on the day it matched">Close</th>
+                  <th title="Next session's open">Entry</th>
+                  <th title="Entry to the latest close">To date</th>
+                  <th>5</th>
+                  <th>10</th>
+                  <th>20</th>
+                </tr>
+              </thead>
+              <tbody>
+                {brief.log.map((e) => (
+                  <tr key={e.id} onClick={() => onOpenStock(e.s)}>
+                    <td className="sym">{star(e.s)}<b>{e.s}</b></td>
+                    <td className="left">{e.label}</td>
+                    <td>{fmtDate(e.date)}</td>
+                    <td>{fmtPrice(e.close)}</td>
+                    <td>{e.entry == null ? <span className="muted">next open</span> : fmtPrice(e.entry)}</td>
+                    <td className={tone(e.entry == null ? null : e.last)}>{e.entry == null ? '–' : fmtPct(e.last)}</td>
+                    <td className={tone(e.r5)}>{fmtPct(e.r5)}</td>
+                    <td className={tone(e.r10)}>{fmtPct(e.r10)}</td>
+                    <td className={tone(e.r20)}>{fmtPct(e.r20)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      </section>
+      <p className="note disclaimer">These are stocks that matched rules, not recommendations. The backtests found no rule here that reliably beats the market after costs.</p>
     </div>
   );
 }

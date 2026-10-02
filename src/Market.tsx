@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { fmtDate, fmtPct, monthOf } from './data';
+import { Delta, Spark, tone } from './ui';
 
 interface Summary {
   n: number;
@@ -24,9 +25,91 @@ export interface MarketData {
   groups: (Summary & { label: string })[];
   sectors: (Summary & { sector: string })[];
   history: { d: number[]; a50: (number | null)[]; a200: (number | null)[]; hi: number[]; lo: number[] };
+  deriv?: Positioning | null;
+}
+interface Positioning {
+  indices: {
+    symbol: string; name: string; close: number; chg: number | null; pe: number | null;
+    futOiChg: number | null; pcr: number | null; expiry: number | null; maxPain: number | null;
+    resistance: number | null; support: number | null; iv: number | null;
+  }[];
+  vix: { close: number; chg: number } | null;
+  participants: { who: string; net: number; longShare: number; netChg: number | null }[] | null;
+  ban: string[];
 }
 
-const tone = (v: number | null | undefined) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
+const WHO: Record<string, string> = { FII: 'Foreign institutions', Client: 'Retail and other clients', Pro: 'Proprietary desks', DII: 'Domestic institutions' };
+const n0 = (v: number | null | undefined) => (v == null ? '–' : Math.round(v).toLocaleString('en-IN'));
+
+/** Index futures and options positioning: where the option open interest sits, and who is long or short. */
+function IndexPositioning({ deriv }: { deriv: Positioning }) {
+  return (
+    <section className="positioning" id="positioning">
+      <h3>Index futures and options <small>end-of-day positioning</small></h3>
+      <div className="pos-grid">
+        {deriv.indices.slice().reverse().map((x) => {
+          const lo = x.support, hi = x.resistance;
+          const span = lo != null && hi != null && hi > lo ? hi - lo : null;
+          const at = (v: number | null) => (span && v != null ? Math.max(0, Math.min(100, ((v - lo!) / span) * 100)) : null);
+          return (
+            <div className="tile pos" key={x.symbol}>
+              <span>{x.name}</span>
+              <b>{n0(x.close)} <Delta value={x.chg} /></b>
+              {span && (
+                <div className="walls" role="img" aria-label={`Price ${n0(x.close)} between put support at ${n0(lo)} and call resistance at ${n0(hi)}`}>
+                  <div className="walls-track">
+                    {at(x.maxPain) != null && <i className="pain" style={{ left: `${at(x.maxPain)}%` }} title={`Max pain ${n0(x.maxPain)}`} />}
+                    <i className="spot" style={{ left: `${at(x.close)}%` }} title={`Close ${n0(x.close)}`} />
+                  </div>
+                  <div className="walls-labels">
+                    <span><em>Put support</em>{n0(lo)}</span>
+                    <span><em>Call resistance</em>{n0(hi)}</span>
+                  </div>
+                </div>
+              )}
+              <dl>
+                <dt title="Put open interest divided by call open interest, all expiries">Put/call ratio</dt><dd>{x.pcr?.toFixed(2) ?? '–'}</dd>
+                <dt title="The expiry price at which option buyers, in total, are paid the least">Max pain</dt><dd>{n0(x.maxPain)}</dd>
+                <dt>Futures open interest</dt><dd className={tone(x.futOiChg)}>{fmtPct(x.futOiChg)}</dd>
+                <dt>Implied volatility</dt><dd>{x.iv == null ? '–' : `${x.iv.toFixed(1)}%`}</dd>
+                <dt>Nearest expiry</dt><dd>{x.expiry ? fmtDate(x.expiry, false) : '–'}</dd>
+                {x.pe != null && <><dt>Index P/E</dt><dd>{x.pe.toFixed(1)}</dd></>}
+              </dl>
+            </div>
+          );
+        })}
+        <div className="tile pos">
+          <span>Who holds index futures</span>
+          {deriv.vix && <b>VIX {deriv.vix.close.toFixed(2)} <Delta value={deriv.vix.chg} /></b>}
+          {deriv.participants ? (
+            <table className="who">
+              <thead>
+                <tr><th className="left">Participant</th><th title="Long contracts minus short contracts">Net</th><th title="Change in net position today">Today</th><th title="Share of their index futures that are long">Long</th></tr>
+              </thead>
+              <tbody>
+                {deriv.participants.map((p) => (
+                  <tr key={p.who} className="static">
+                    <td className="left" title={WHO[p.who]}>{p.who === 'Client' ? 'Clients' : p.who}</td>
+                    <td className={tone(p.net)}>{p.net > 0 ? '+' : p.net < 0 ? '−' : ''}{n0(Math.abs(p.net))}</td>
+                    <td className={tone(p.netChg)}>{p.netChg == null ? '–' : `${p.netChg > 0 ? '+' : p.netChg < 0 ? '−' : ''}${n0(Math.abs(p.netChg))}`}</td>
+                    <td><span className="meter">{p.longShare.toFixed(0)}%<i><b style={{ width: `${p.longShare}%` }} /></i></span></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : <small>Participant data not published yet.</small>}
+          <small>
+            {deriv.ban.length ? <>F&O ban: {deriv.ban.join(', ')}</> : 'No stocks in the F&O ban period.'}
+          </small>
+        </div>
+      </div>
+      <p className="note">
+        Put support and call resistance are the strikes with the most open interest below and above the price for the nearest expiry. They show where option writers are positioned, not where the price will go.
+      </p>
+    </section>
+  );
+}
+
 const pc = (v: number | null) => (v == null ? '–' : `${v.toFixed(0)}%`);
 
 const PAD = { l: 8, r: 40, t: 10, b: 20 };
@@ -123,12 +206,53 @@ function BreadthChart({ history }: { history: MarketData['history'] }) {
   );
 }
 
-function Tile({ label, value, sub }: { label: string; value: React.ReactNode; sub?: React.ReactNode }) {
+function Tile({ label, value, sub, children }: { label: string; value: React.ReactNode; sub?: React.ReactNode; children?: React.ReactNode }) {
   return (
     <div className="tile">
       <span>{label}</span>
       <b>{value}</b>
+      {children}
       {sub && <small>{sub}</small>}
+    </div>
+  );
+}
+
+/** Two counts as one bar split in proportion, e.g. advancers vs decliners. */
+function Split({ up, down, upLabel, downLabel }: { up: number; down: number; upLabel: string; downLabel: string }) {
+  const total = up + down || 1;
+  return (
+    <div className="split" role="img" aria-label={`${up} ${upLabel}, ${down} ${downLabel}`}>
+      <i className="up" style={{ flexGrow: up / total }} title={`${up} ${upLabel}`} />
+      <i className="down" style={{ flexGrow: down / total }} title={`${down} ${downLabel}`} />
+    </div>
+  );
+}
+
+/** The headline breadth reading: today's share above the 200-day average, with last month's marked. */
+export function BreadthMeter({ market }: { market: MarketData }) {
+  const now = market.above200;
+  const then = market.above200MonthAgo;
+  return (
+    <div className="breadth">
+      <span className="lbl">Stocks above their 200-day average</span>
+      <div className="breadth-value">
+        <b>{pc(now)}</b>
+        {then != null && now != null && (
+          <small className={tone(now - then)}>
+            {now >= then ? '▲' : '▼'} {Math.abs(now - then).toFixed(0)} pts in a month
+          </small>
+        )}
+      </div>
+      <div className="breadth-track" role="img" aria-label={`${pc(now)} today, ${pc(then)} a month ago`}>
+        <i className="fill" style={{ width: `${now ?? 0}%` }} />
+        {then != null && <i className="ghost" style={{ left: `${then}%` }} title={`${pc(then)} a month ago`} />}
+        <i className="mid" />
+      </div>
+      <div className="breadth-scale">
+        <span>0%</span>
+        <span>mostly falling ← 50% → mostly rising</span>
+        <span>100%</span>
+      </div>
     </div>
   );
 }
@@ -170,27 +294,27 @@ function SummaryTable({ head, rows }: { head: string; rows: (Summary & { name: s
 
 export function Market({ market }: { market: MarketData }) {
   const m = market;
-  const trend =
-    m.above200 == null ? null : m.above200 >= 60 ? 'Most stocks are in an uptrend.' : m.above200 <= 40 ? 'Most stocks are in a downtrend.' : 'The market is split.';
-  const delta = m.above200 != null && m.above200MonthAgo != null ? m.above200 - m.above200MonthAgo : null;
+  const recent = (a: (number | null)[]) => a.slice(-60).filter((v): v is number => v != null);
   return (
-    <section className="market">
+    <section className="market" id="market">
       <h3>Market <small>{m.liquid.toLocaleString('en-IN')} stocks with ₹1 Cr+ daily turnover</small></h3>
-      <p className="note">
-        {trend} {pc(m.above200)} are above their 200-day average
-        {delta != null && Math.abs(delta) >= 1 && `, ${delta > 0 ? 'up' : 'down'} from ${pc(m.above200MonthAgo)} a month ago`}.
-      </p>
       <div className="tiles">
-        <Tile label="Above 200-day average" value={pc(m.above200)} sub={`${pc(m.above200MonthAgo)} a month ago`} />
-        <Tile label="Above 50-day average" value={pc(m.above50)} sub={`${pc(m.above50MonthAgo)} a month ago`} />
-        <Tile label="New 52W highs / lows" value={`${m.newHi} / ${m.newLo}`} />
-        <Tile label="Advancers / decliners" value={`${m.advancers} / ${m.decliners}`} />
-        <Tile label="Median stock today" value={<span className={tone(m.medianChg)}>{fmtPct(m.medianChg, 2)}</span>} />
+        <Tile label="Above 50-day average" value={pc(m.above50)} sub={`${pc(m.above50MonthAgo)} a month ago`}>
+          <Spark data={recent(m.history.a50)} width={120} height={28} />
+        </Tile>
+        <Tile label="Advancers vs decliners" value={<>{m.advancers} <span className="muted">/</span> {m.decliners}</>} sub="rose / fell today">
+          <Split up={m.advancers} down={m.decliners} upLabel="rose" downLabel="fell" />
+        </Tile>
+        <Tile label="New 52-week highs vs lows" value={<>{m.newHi} <span className="muted">/</span> {m.newLo}</>} sub="highs / lows today">
+          <Split up={m.newHi} down={m.newLo} upLabel="new highs" downLabel="new lows" />
+        </Tile>
+        <Tile label="Median stock today" value={<span className={tone(m.medianChg)}>{fmtPct(m.medianChg, 2)}</span>} sub="half did better, half worse" />
       </div>
       <div className="market-grid">
         <BreadthChart history={m.history} />
         <SummaryTable head="By size" rows={m.groups.map((g) => ({ ...g, name: g.label }))} />
       </div>
+      {m.deriv && <IndexPositioning deriv={m.deriv} />}
       <details>
         <summary>Sectors, strongest month first ({m.sectors.length})</summary>
         <SummaryTable head="Sector" rows={m.sectors.map((s) => ({ ...s, name: s.sector }))} />

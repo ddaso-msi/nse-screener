@@ -56,6 +56,10 @@ All from the NSE archive, one set of files per trading session, cached in `data/
 - **P/E**: `PE_ddmmyy.csv` (available from 2024).
 - **Index membership and sector**: NSE index constituent lists. Only the ~750 Nifty Total Market stocks carry a sector.
 
+- **Derivatives**: the F&O bhavcopy (both the pre- and post-July 2024 formats), `fao_participant_oi_*.csv`, `ind_close_all_*.csv` and `fo_secban.csv`. Each session's 6 MB bhavcopy is reduced to a small summary in `data/raw/fo/` by `scripts/derivatives.mjs`.
+- **Filings**: `an*.txt` (announcements) and `bm*.txt` (board meetings) inside the PR zip, kept for the last 12 sessions.
+- **Headlines**: public RSS feeds from Economic Times, Mint, Business Standard, BusinessLine and CNBC-TV18. Only headline, blurb, source and link are stored (`scripts/news.mjs`).
+
 `scripts/sync.mjs` writes `public/data/screener.json` (one row per stock) and `public/data/h/<SYMBOL>.json` (price history and corporate actions for the detail panel). Both are generated and git-ignored. `scripts/fundamentals.mjs` holds the corporate-action, market-cap and P/E loaders.
 
 ## How the numbers are built
@@ -63,6 +67,9 @@ All from the NSE archive, one set of files per trading session, cached in `data/
 - **Price adjustment**: earlier prices are scaled at each official split, bonus, rights issue and demerger. Splits and bonuses use the announced ratio and are only applied where the opening gap confirms them, on the stated ex-date or within five sessions (ex-dates get revised). Demergers carry no ratio, so the opening gap is used. A stock that opens more than 23% down with no official action on record is still adjusted and marked "inferred". Dividends are not adjusted.
 - **Relative strength (RS)** = each stock's weighted return (40% last 3 months, 20% each for 6, 9 and 12 months) ranked 1–99 across all stocks; needs six months of history.
 - **Market section of the brief**: breadth and leadership across stocks with ₹1 Cr+ daily turnover, using the median stock in each size group and sector (not index levels).
+- **Futures position** on F&O stocks: open interest is summed across expiries; a day counts as long build-up (price up, OI up 3%+), short build-up (price down, OI up), short covering (price up, OI down 3%+) or long unwinding (price down, OI down). Not flagged in a stock's first 20 sessions in F&O.
+- **IV** = at-the-money implied volatility (Black-Scholes, 6.5% rate) from the nearest expiry with 3+ days left; **IV rank** = share of the past year's sessions with a lower IV.
+- **Index positioning** in the Brief: put/call ratio, max pain, and the strikes with the most put OI below and call OI above the price for the nearest expiry; net index-futures positions by participant type.
 - **EPS** = price / P/E. **Earnings growth** = trailing earnings (market cap / P/E) versus 252 sessions earlier. **Dividend yield** = dividends with an ex-date in the last 12 months / price.
 - **Large / mid / small cap** = market-cap rank 1–100 / 101–250 / the rest.
 
