@@ -80,6 +80,7 @@ function marketContext(universe) {
   const today = [];
 
   for (const sym of universe.symbols) {
+    if (sym.etf) continue;
     for (let t = sym.n - 1; t >= 0; t--) {
       const i = at.get(sym.date[t]) - from;
       if (i < 0) break;
@@ -235,7 +236,7 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
   const latest = universe.dates[universe.dates.length - 1];
   const bySymbol = new Map(universe.symbols.map((sym) => [sym.s, sym]));
   const screener = JSON.parse(await readFile(path.join(OUT, 'screener.json'), 'utf8'));
-  const rowOf = new Map(screener.rows.map((r) => [r.s, r]));
+  const rowOf = new Map([...screener.rows, ...(screener.etfs ?? [])].map((r) => [r.s, r]));
   const [watchlist, screens, entries] = await Promise.all([readUser('watchlist'), readUser('screens'), readUser('log')]);
   const paper = processPaper(await readUser('paper'), universe);
   await writeUser('paper', paper);

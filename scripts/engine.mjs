@@ -9,6 +9,7 @@
 // sessions, so a rising market doesn't flatter a screen.
 
 import { derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
+import { loadEtfList } from './etf.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
 import { PATTERNS, detectPatterns } from './patterns.mjs';
 import { adjust, cachedList, fetchDays, loadHistory, rankTo99, rsScore } from './sync.mjs';
@@ -136,6 +137,8 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
     for (const r of await cachedList(list, 7, log)) membership.set(r.Symbol, code);
   }
 
+  const etfList = await loadEtfList(log);
+
   log('Loading history…');
   const { bySymbol, dates } = await loadHistory(files);
   if (!dates.length) throw new Error('No bhavcopy data could be loaded');
@@ -143,7 +146,10 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
   log('Computing indicators…');
   const symbols = [];
   for (const [symbol, days] of bySymbol) {
-    if (!master.has(symbol)) continue; // ETFs, bonds etc.
+    // ETFs are loaded so the watchlist and paper account can follow them, but
+    // flagged so screens, backtests and market statistics leave them out
+    const etf = etfList.has(symbol);
+    if (!master.has(symbol) && !etf) continue;
     const bars = [...days.values()].sort((a, b) => a.date - b.date);
     if (bars.length < MIN_BARS) continue;
     const events = adjust(bars, fund.actions.get(symbol) ?? [], fund.faceValue.get(symbol) ?? 0);
@@ -155,6 +161,7 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
     Object.assign(cols.f, detectPatterns(bars).flags);
     symbols.push({
       s: symbol,
+      etf,
       fo: ds.any,
       idx: membership.get(symbol) ?? null,
       sector: sectors.get(symbol) ?? null,
@@ -173,6 +180,7 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
     for (let t = 0; t < sym.n; t++) {
       const raw = sym.m.rs[t];
       if (Number.isNaN(raw)) continue;
+      if (sym.etf) { sym.m.rs[t] = NaN; continue; }
       (byDate.get(sym.date[t]) ?? byDate.set(sym.date[t], []).get(sym.date[t])).push([si * 4096 + t, raw]);
     }
   });
@@ -188,6 +196,7 @@ export function baseline(universe, hold) {
   if (cached) return cached;
   const acc = new Map();
   for (const sym of universe.symbols) {
+    if (sym.etf) continue;
     for (let t = 0; t + hold < sym.n; t++) {
       if (!(sym.m.avgTurnover[t] >= BASELINE_MIN_TURNOVER) || !(sym.o[t + 1] > 0)) continue;
       const a = acc.get(sym.date[t]) ?? acc.set(sym.date[t], [0, 0]).get(sym.date[t]);
@@ -208,7 +217,7 @@ export function compile(filters = {}) {
   const inUniverse = UNIVERSES[filters.universe] ?? (() => true);
   return {
     empty: !flags.length && !ranges.length,
-    symbol: (sym) => inUniverse(sym.idx, sym) && (!filters.sector || sym.sector === filters.sector),
+    symbol: (sym) => !sym.etf && inUniverse(sym.idx, sym) && (!filters.sector || sym.sector === filters.sector),
     row(sym, t) {
       for (const k of flags) if (!sym.f[k][t]) return false;
       for (const [k, min, max] of ranges) {

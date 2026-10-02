@@ -68,6 +68,20 @@ export interface Row {
   filed: string[];
   /** Chart patterns present on the latest session */
   pat: PatternCode[];
+  /** Return over 504 sessions, % (ETFs only) */
+  y2?: number | null;
+  /** Present only for exchange-traded funds */
+  etf?: {
+    underlying: string;
+    category: string;
+    nav: number | null;
+    navDate: number | null;
+    /** Closing price vs NAV, % (positive = price above the holdings' value) */
+    prem: number | null;
+    premAvg: number | null;
+    /** Total expense ratio, % a year */
+    ter: number | null;
+  };
 }
 
 export type PatternCode = 'tightBase' | 'baseBreak' | 'flag' | 'cup' | 'dblBottom';
@@ -87,6 +101,7 @@ export interface Dataset {
   sessions: number;
   indices: { code: string; label: string }[];
   rows: Row[];
+  etfs?: Row[];
 }
 
 export interface History {

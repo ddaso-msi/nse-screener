@@ -34,6 +34,14 @@ scripts/schedule.sh uninstall
 - **Secrets**: `APP_PASSWORD` on the Pages project; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the GitHub repo. Until the GitHub secrets exist the workflow skips publishing.
 - **Local test of the hosted build**: `npm run build && npx wrangler pages dev dist --kv USER` with `APP_PASSWORD` in `.dev.vars`.
 
+## ETFs tab
+
+349 exchange-traded funds listed on NSE, kept apart from the stocks (they are not in the Screener, the market statistics or the backtests) but usable everywhere else: search, the stock panel, the Chart tab, the watchlist and paper trading.
+
+- **For trading**: the same price metrics as stocks, with relative strength ranked among ETFs only. Liquid funds are left out by default.
+- **For long-term investing**: funds grouped by what they track, compared on yearly cost (total expense ratio), daily turnover, and price versus NAV today and on average over 60 sessions.
+- Data (`scripts/etf.mjs`): NSE's `eq_etfseclist.csv` for the list and what each fund tracks; AMFI's `NAVAll.txt` and NAV history report for NAVs (matched by ISIN); AMFI's expense-ratio API (matched by scheme name, fetched for the current and previous month). Not available: fund size (AUM), tracking error and tax treatment.
+
 ## Chart tab
 
 A full-screen chart (`src/ChartTab.tsx`) built on TradingView's open-source Lightweight Charts library (Apache 2.0; its logo on the chart is the attribution). Daily, weekly and monthly bars from three years of adjusted prices; candles, line or area; 20/50/200-day averages, a 20-day exponential average, Bollinger bands and volume on the price; RSI, MACD, delivery % and futures open interest in their own panels; comparison with an index or another stock as percentage change. The app's own information is drawn on top: pattern shapes and pivots, split/bonus/dividend markers, your alert level and paper-trade entry, stop and target.

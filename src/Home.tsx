@@ -5,6 +5,7 @@ import { Icon, StockSearch, type Theme } from './ui';
 const PLACES = [
   ['brief', 'Brief', 'What changed today'],
   ['screener', 'Screener', 'Find stocks by rule'],
+  ['etfs', 'ETFs', 'Funds to trade or hold'],
   ['chart', 'Chart', 'Candles, indicators, drawings'],
   ['paper', 'Paper', 'Practise with virtual money'],
   ['options', 'Options', 'Chains and payoffs'],
@@ -25,8 +26,10 @@ function Mark({ size }: { size: number }) {
 }
 
 /** The first page: the name, one line about today, a search box, and the ways in. */
-export function Home({ data, onGo, onPick, theme, onTheme }: {
+export function Home({ data, searchRows, onGo, onPick, theme, onTheme }: {
   data: Dataset;
+  /** Stocks and ETFs */
+  searchRows: Row[];
   onGo: (place: Place) => void;
   onPick: (symbol: string) => void;
   theme: Theme;
@@ -49,7 +52,7 @@ export function Home({ data, onGo, onPick, theme, onTheme }: {
         <h1>{APP_NAME}</h1>
         <p className="tagline">{TAGLINE}</p>
 
-        <StockSearch rows={data.rows} onPick={onPick} />
+        <StockSearch rows={searchRows} onPick={onPick} />
 
         <button className="today" onClick={() => onGo('brief')}>
           <i />

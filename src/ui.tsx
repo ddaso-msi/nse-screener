@@ -4,6 +4,7 @@ import { fmtPct, fmtPrice, type Row } from './data';
 const PATHS = {
   brief: 'M3 12.5h10M8 3v2M3.4 6.4l1.4 1.4M12.6 6.4l-1.4 1.4M4.5 12.5a3.5 3.5 0 0 1 7 0',
   screener: 'M2.5 3.5h11l-4.2 5v4l-2.6 1v-5z',
+  etfs: 'M8 2.5a5.5 5.5 0 1 0 5.5 5.5H8zM10 2.3A5.5 5.5 0 0 1 13.7 6H10z',
   chart: 'M4 2.5v11M4 5h0M4 5.5v4.5M8 4v9.5M8 6.5v4M12 2.5v9M12 4v4.5M3 5.5h2v4.5H3zM7 6.5h2v4H7zM11 4h2v4.5h-2z',
   paper: 'M2.5 12.5l3.5-4 2.5 2.5 5-6.5M10 4.5h3.5V8',
   options: 'M2 12.5c3 0 3.5-9 6-9s3 9 6 9M2 8h12',
@@ -134,8 +135,8 @@ export function StockSearch({ rows, onPick }: { rows: Row[]; onPick: (symbol: st
       <input
         ref={input}
         value={q}
-        placeholder="Find a stock"
-        aria-label="Find a stock"
+        placeholder="Find a stock or ETF"
+        aria-label="Find a stock or ETF"
         onChange={(e) => { setQ(e.target.value); setOpen(true); setAt(0); }}
         onFocus={() => setOpen(true)}
         onBlur={() => setTimeout(() => setOpen(false), 120)}

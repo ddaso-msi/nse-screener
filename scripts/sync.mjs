@@ -9,6 +9,7 @@ import { mkdir, readFile, writeFile, stat, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildOptions, derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
+import { fetchEtfData, loadEtfData, loadEtfList } from './etf.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
 import { buildNews, fetchFilings, loadFilings } from './news.mjs';
 import { detectPatterns } from './patterns.mjs';
@@ -487,6 +488,61 @@ export async function sync({ log = console.log } = {}) {
   });
   rows.sort((a, b) => (b.avgTurnover ?? 0) - (a.avgTurnover ?? 0));
 
+  // ---- exchange-traded funds: same price metrics, plus NAV and cost; kept apart from the stocks
+  log('Building ETFs…');
+  const etfList = await loadEtfList(log);
+  await fetchEtfData({ list: etfList, dates, log });
+  const etfData = await loadEtfData();
+  const etfs = [];
+  for (const [symbol, info] of etfList) {
+    const days = bySymbol.get(symbol);
+    if (!days) continue;
+    const bars = [...days.values()].sort((a, b) => a.date - b.date);
+    if (bars[bars.length - 1].date !== latest) continue;
+    const ca = adjust(bars, fund.actions.get(symbol) ?? [], 0);
+    const at = bars.length - 1;
+    const nav = info.isin ? etfData.navAt(info.isin, latest) : null;
+    const gaps = bars.slice(-60).map((b) => {
+      const v = info.isin ? etfData.navOn(info.isin, b.date) : null;
+      return v ? (b.rc / v - 1) * 100 : null;
+    }).filter((x) => x != null);
+    etfs.push({
+      s: symbol,
+      name: etfData.names[info.isin] ?? info.shortName,
+      sector: info.category,
+      idx: null,
+      ...metrics(bars),
+      y2: bars.length > 504 ? r1(pct(bars[at].c, bars[at - 504].c)) : null,
+      mcap: null, pe: null, eps: null, epsG: null, divY: null, cap: null, nextEx: null,
+      fo: 0, foOiChg: null, oi5: null, pcr: null, iv: null, ivRank: null, build: null, ban: 0,
+      pat: [], bm: null, filed: [], ca: ca.length,
+      etf: {
+        underlying: info.underlying,
+        category: info.category,
+        nav: nav ? r2(nav.nav) : null,
+        navDate: nav?.date ?? null,
+        // price above (+) or below (−) the value of what the fund holds
+        prem: nav && nav.date === latest ? r2((bars[at].rc / nav.nav - 1) * 100) : null,
+        premAvg: gaps.length >= 10 ? r2(gaps.reduce((a, b) => a + b, 0) / gaps.length) : null,
+        ter: etfData.ter(info.isin),
+      },
+    });
+    await writeFile(
+      path.join(OUT, 'h', `${fileSafe(symbol)}.json`),
+      JSON.stringify({
+        d: bars.map((b) => b.date), o: bars.map((b) => r2(b.o)), h: bars.map((b) => r2(b.h)), l: bars.map((b) => r2(b.l)),
+        c: bars.map((b) => r2(b.c)), v: bars.map((b) => Math.round(b.v)), dl: bars.map((b) => b.deliv), ca, acts: [], pat: [],
+      }),
+    );
+  }
+  // relative strength among ETFs only (liquid funds excluded: they barely move by design)
+  const etfRanks = rankTo99(etfs.filter((r) => r.rsRaw != null && r.etf.category !== 'Liquid').map((r) => [r.s, r.rsRaw]));
+  for (const r of etfs) {
+    r.rs = etfRanks.get(r.s) ?? null;
+    delete r.rsRaw;
+  }
+  etfs.sort((a, b) => (b.avgTurnover ?? 0) - (a.avgTurnover ?? 0));
+
   // index closes, for comparing a stock with the market on the chart
   const indexHistory = {};
   for (const d of dates) {
@@ -507,8 +563,10 @@ export async function sync({ log = console.log } = {}) {
     sessions: dates.length,
     indices: INDICES.map(([code, label]) => ({ code, label })),
     rows,
+    etfs,
   };
   await writeFile(path.join(OUT, 'screener.json'), JSON.stringify(meta));
+  log(`ETFs: ${etfs.length} funds, ${etfs.filter((e) => e.etf.nav).length} with NAV, ${etfs.filter((e) => e.etf.ter).length} with expense ratio`);
   log(`Done: ${rows.length} stocks, ${dates.length} sessions, as of ${latest} (${adjusted} adjusted for corporate actions)`);
   return { asOf: latest, stocks: rows.length, sessions: dates.length };
 }

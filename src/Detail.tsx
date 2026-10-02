@@ -193,8 +193,26 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
         {short && <p className="note">Only {row.sessions} sessions of history, so the range covers less than 52 weeks.</p>}
       </div>
 
-      <h3>Fundamentals</h3>
-      <div className="stats">
+      {row.etf && (
+        <>
+          <h3>About this fund</h3>
+          <div className="stats">
+            <Stat label="Tracks" value={row.etf.underlying} />
+            <Stat label="Type" value={row.etf.category} />
+            <Stat label="Yearly cost" value={row.etf.ter == null ? '–' : `${row.etf.ter.toFixed(2)}%`} />
+            <Stat label="NAV" value={row.etf.nav == null ? '–' : `₹${fmtPrice(row.etf.nav)}`} />
+            <Stat label="Price vs NAV today" value={fmtPct(row.etf.prem, 2)} />
+            <Stat label="Price vs NAV, 60-day avg" value={fmtPct(row.etf.premAvg, 2)} />
+          </div>
+          <p className="note">
+            Yearly cost is the fund's expense ratio. Price vs NAV shows whether the market price is above (+) or below (−) the value of what the fund holds.
+            {row.avgTurnover < 1 && ' This fund trades less than ₹1 Cr a day, so buying or selling at a fair price can be hard.'}
+          </p>
+        </>
+      )}
+
+      {!row.etf && <h3>Fundamentals</h3>}
+      <div className="stats" hidden={!!row.etf}>
         <Stat label="Market cap" value={row.mcap == null ? '–' : `₹${fmtMcap(row.mcap)}`} />
         <Stat label="P/E (trailing)" value={row.pe == null ? 'None (loss or n/a)' : row.pe.toFixed(1)} />
         <Stat label="EPS (trailing)" value={row.eps == null ? '–' : `₹${fmtPrice(row.eps)}`} />

@@ -8,6 +8,7 @@ import { News } from './News';
 import { Options } from './Options';
 import { PaperTab } from './Paper';
 import { Detail } from './Detail';
+import { Etfs } from './Etfs';
 import { NumInput } from './NumInput';
 import { Delta, Icon, Meter, RangeBar, Spark, StockSearch, tone, useTheme } from './ui';
 import { useBriefScreens, useDrawings, usePaper, useWatchlist } from './user';
@@ -80,7 +81,7 @@ export default function App() {
   const [shown, setShown] = useState(PAGE);
   const [selected, setSelected] = useState<string | null>(null);
   const [saved, setSaved] = useState<Saved[]>(loadSaved);
-  const [view, setView] = useState<'home' | 'brief' | 'screener' | 'chart' | 'paper' | 'options' | 'news' | 'backtest'>('home');
+  const [view, setView] = useState<'home' | 'brief' | 'screener' | 'etfs' | 'chart' | 'paper' | 'options' | 'news' | 'backtest'>('home');
   const [chartSymbol, setChartSymbol] = useState<string | null>(null);
   const [drawings, saveDrawings] = useDrawings();
   const [paper, savePaper, , reloadPaper] = usePaper();
@@ -126,7 +127,10 @@ export default function App() {
     () => (data ? sortRows(applyFilters(watchOnly ? data.rows.filter((r) => watchlist[r.s]) : data.rows, filters), sort[0], sort[1]) : []),
     [data, filters, sort, watchOnly, watchlist],
   );
-  const selectedRow = useMemo(() => data?.rows.find((r) => r.s === selected) ?? null, [data, selected]);
+  // stocks and ETFs together: for search, the stock panel, the chart, the watchlist and paper trades
+  const everything = useMemo(() => [...(data?.rows ?? []), ...(data?.etfs ?? [])], [data]);
+  const rowOf = useMemo(() => new Map(everything.map((r) => [r.s, r])), [everything]);
+  const selectedRow = useMemo(() => (selected ? rowOf.get(selected) ?? null : null), [rowOf, selected]);
   const visible = useMemo(() => rows.slice(0, shown), [rows, shown]);
 
   // ↑/↓ steps through the results while a stock is open in the Screener
@@ -164,7 +168,7 @@ export default function App() {
     setSelected(null);
     setView('chart');
   }, []);
-  const rowOf = useMemo(() => new Map((data?.rows ?? []).map((r) => [r.s, r])), [data]);
+
 
   const update = (patch: Partial<Filters>) => {
     setFilters((f) => ({ ...f, ...patch }));
@@ -248,7 +252,7 @@ export default function App() {
 
   return (
     <div className={`app view-${view} ${selectedRow && view === 'screener' ? 'with-detail' : ''}`}>
-      {view === 'home' && <Home data={data} onGo={setView} onPick={openStock} theme={theme} onTheme={nextTheme} />}
+      {view === 'home' && <Home data={data} searchRows={everything} onGo={setView} onPick={openStock} theme={theme} onTheme={nextTheme} />}
 
       {view !== 'home' && <header className="top">
         <button className="brand" onClick={() => setView('home')} title={`${APP_NAME} home`}>
@@ -258,14 +262,14 @@ export default function App() {
           <h1>{APP_NAME}</h1>
         </button>
         <nav className="tabs" role="tablist" aria-label="Sections">
-          {([['brief', 'Brief'], ['screener', 'Screener'], ['chart', 'Chart'], ['paper', 'Paper'], ['options', 'Options'], ['news', 'News'], ['backtest', 'Backtest']] as const).map(([id, label]) => (
+          {([['brief', 'Brief'], ['screener', 'Screener'], ['etfs', 'ETFs'], ['chart', 'Chart'], ['paper', 'Paper'], ['options', 'Options'], ['news', 'News'], ['backtest', 'Backtest']] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={view === id} className={view === id ? 'on' : ''} onClick={() => setView(id)}>
               <Icon name={id} />
               {label}
             </button>
           ))}
         </nav>
-        <StockSearch rows={data.rows} onPick={openStock} />
+        <StockSearch rows={everything} onPick={openStock} />
         <div className="top-right">
           {syncMsg && <span className="muted">{syncMsg}</span>}
           <span className="asof" title={`${data.rows.length.toLocaleString('en-IN')} stocks · end-of-day data`}>
@@ -299,6 +303,8 @@ export default function App() {
           onOpenFilters={(f) => { setFilters({ ...EMPTY, ...f }); setPreset(null); setWatchOnly(false); setShown(PAGE); setView('screener'); }}
         />
       )}
+
+      {view === 'etfs' && <Etfs etfs={data.etfs ?? []} watchlist={watchlist} onToggleWatch={toggleWatch} onOpenStock={openStock} selected={selected} />}
 
       {view === 'chart' && (
         <ChartTab
