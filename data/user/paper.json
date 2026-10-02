@@ -1,0 +1,16 @@
+{
+  "start": 1000000,
+  "cash": 1000000,
+  "orders": [],
+  "positions": [],
+  "closed": [],
+  "equity": [
+    {
+      "date": 20261001,
+      "value": 1000000,
+      "nifty": 22421.95
+    }
+  ],
+  "notices": [],
+  "last": 20261001
+}

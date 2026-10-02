@@ -34,6 +34,28 @@ scripts/schedule.sh uninstall
 - **Secrets**: `APP_PASSWORD` on the Pages project; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the GitHub repo. Until the GitHub secrets exist the workflow skips publishing.
 - **Local test of the hosted build**: `npm run build && npx wrangler pages dev dist --kv USER` with `APP_PASSWORD` in `.dev.vars`.
 
+## Chart tab
+
+A full-screen chart (`src/ChartTab.tsx`) built on TradingView's open-source Lightweight Charts library (Apache 2.0; its logo on the chart is the attribution). Daily, weekly and monthly bars from three years of adjusted prices; candles, line or area; 20/50/200-day averages, a 20-day exponential average, Bollinger bands and volume on the price; RSI, MACD, delivery % and futures open interest in their own panels; comparison with an index or another stock as percentage change. The app's own information is drawn on top: pattern shapes and pivots, split/bonus/dividend markers, your alert level and paper-trade entry, stop and target.
+
+Drawing tools are a horizontal level and a trendline, stored per stock in `data/user/drawings.json` (the `drawings` key in KV when hosted). A level can be turned into the stock's watchlist alert level. There are no intraday bars.
+
+## Chart patterns
+
+`scripts/patterns.mjs` detects five shapes with fixed rules: tight base near highs, base breakout, bull flag, cup with handle and double bottom breakout. The same code feeds the Screener (the "Chart patterns" list and filters), the overlay on the price chart (shaded shape and pivot line) and the backtest engine.
+
+## Paper trading
+
+A practice account with ₹10,00,000 of virtual money (`data/user/paper.json`; the `paper` key in KV when hosted). Orders are placed from a stock's panel, sized by the share of the account you are willing to lose at the stop. `processPaper()` in `scripts/brief.mjs` runs with every brief: orders fill at the next session's open, stops and targets are checked against each day's range (stop first if both are touched; a gap fills at the open), 0.15% is charged per side, and positions are restated after a split or bonus. The nightly workflow reads the account from KV and writes it back after processing.
+
+## Options tab
+
+An end-of-day options workspace for every F&O underlying (indices and stocks): the option chain per expiry with open interest, its change, implied volatility and settlement prices; a strategy builder with common structures or legs picked from the chain; and call/put open interest by strike.
+
+- Data: the latest session's full chain is kept in `data/raw/fo-chain/` and written to `public/data/options.json` and `public/data/o/<SYMBOL>.json` by `buildOptions()` in `scripts/derivatives.mjs`.
+- Maths (`src/optionMath.ts`): Black-Scholes on the forward the chain implies through put-call parity, 6.5% rate. Payoff at expiry and on any earlier day, max profit and loss, breakevens, net delta/theta/vega, and a model "chance of profit" from the at-the-money IV.
+- Not modelled: margin, brokerage and taxes, liquidity, early exercise, mixed expiries. Prices are settlement prices, not tradable quotes.
+
 ## Backtest
 
 ```bash

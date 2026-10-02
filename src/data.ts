@@ -66,7 +66,18 @@ export interface Row {
   bm: { date: number; purpose: string; results: boolean } | null;
   /** Subjects of material filings made on the latest session */
   filed: string[];
+  /** Chart patterns present on the latest session */
+  pat: PatternCode[];
 }
+
+export type PatternCode = 'tightBase' | 'baseBreak' | 'flag' | 'cup' | 'dblBottom';
+export const PATTERN_LABEL: Record<PatternCode, string> = {
+  tightBase: 'Tight base',
+  baseBreak: 'Base breakout',
+  flag: 'Bull flag',
+  cup: 'Cup with handle',
+  dblBottom: 'Double bottom',
+};
 
 export const BUILD_LABEL = { LB: 'Long build-up', SB: 'Short build-up', SC: 'Short covering', LU: 'Long unwinding' } as const;
 
@@ -86,8 +97,12 @@ export interface History {
   c: number[];
   v: number[];
   dl: (number | null)[];
+  /** Futures open interest per session (F&O stocks only) */
+  oi?: (number | null)[];
   ca: { date: number; ratio: number; kind: string; text: string | null }[];
   acts: { ex: number; text: string }[];
+  /** Where each current pattern starts, its pivot (level) and its low */
+  pat?: { code: PatternCode; from: number; level: number; low: number }[];
 }
 
 export type NumKey =
@@ -97,7 +112,7 @@ export type NumKey =
   | 'mcap' | 'pe' | 'epsG' | 'divY' | 'rs'
   | 'foOiChg' | 'oi5' | 'pcr' | 'ivRank';
 
-export type Flag = 'newHi' | 'newLo' | 'golden' | 'death' | 'longBuild' | 'shortBuild' | 'shortCover' | 'longUnwind';
+export type Flag = 'newHi' | 'newLo' | 'golden' | 'death' | 'longBuild' | 'shortBuild' | 'shortCover' | 'longUnwind' | PatternCode;
 
 export interface Filters {
   q: string;
@@ -213,10 +228,13 @@ export const FLAGS: { key: Flag; label: string; test: (r: Row) => boolean }[] = 
   { key: 'shortBuild', label: 'Futures: short build-up today', test: (r) => r.build === 'SB' },
   { key: 'shortCover', label: 'Futures: short covering today', test: (r) => r.build === 'SC' },
   { key: 'longUnwind', label: 'Futures: long unwinding today', test: (r) => r.build === 'LU' },
+  ...(Object.keys(PATTERN_LABEL) as PatternCode[]).map((code) => ({ key: code as Flag, label: `Pattern: ${PATTERN_LABEL[code].toLowerCase()}`, test: (r: Row) => r.pat.includes(code) })),
 ];
 
 export interface Preset {
   id: string;
+  /** 'pattern' presets are listed under their own heading */
+  group?: string;
   label: string;
   blurb: string;
   filters: Partial<Filters>;

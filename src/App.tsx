@@ -1,13 +1,18 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Backtest } from './Backtest';
 import { Brief } from './Brief';
+import { APP_NAME } from './brand';
+import { ChartTab } from './ChartTab';
+import { Home } from './Home';
 import { News } from './News';
+import { Options } from './Options';
+import { PaperTab } from './Paper';
 import { Detail } from './Detail';
 import { NumInput } from './NumInput';
 import { Delta, Icon, Meter, RangeBar, Spark, StockSearch, tone, useTheme } from './ui';
-import { useBriefScreens, useWatchlist } from './user';
+import { useBriefScreens, useDrawings, usePaper, useWatchlist } from './user';
 import {
-  BUILD_LABEL, EMPTY, FIELD_GROUPS, FLAGS, IDX_LABEL, PRESETS, UNIVERSES,
+  BUILD_LABEL, EMPTY, PATTERN_LABEL, FIELD_GROUPS, FLAGS, IDX_LABEL, PRESETS, UNIVERSES,
   HOSTED, applyFilters, describeRange, fmtCr, fmtMcap, fmtDate, fmtPct, fmtPrice, sortRows, toCsv,
   type Dataset, type Filters, type Flag, type NumKey, type Row,
 } from './data';
@@ -75,7 +80,10 @@ export default function App() {
   const [shown, setShown] = useState(PAGE);
   const [selected, setSelected] = useState<string | null>(null);
   const [saved, setSaved] = useState<Saved[]>(loadSaved);
-  const [view, setView] = useState<'brief' | 'screener' | 'news' | 'backtest'>('brief');
+  const [view, setView] = useState<'home' | 'brief' | 'screener' | 'chart' | 'paper' | 'options' | 'news' | 'backtest'>('home');
+  const [chartSymbol, setChartSymbol] = useState<string | null>(null);
+  const [drawings, saveDrawings] = useDrawings();
+  const [paper, savePaper, , reloadPaper] = usePaper();
   const [watchlist, saveWatchlist] = useWatchlist();
   const [briefScreens, saveBriefScreens] = useBriefScreens();
   const [watchOnly, setWatchOnly] = useState(false);
@@ -101,6 +109,7 @@ export default function App() {
       if (!res.ok || !body) throw new Error(body?.error ?? 'Refresh needs the dev server (npm run dev), or run npm run sync.');
       setSyncMsg(body.asOf === data?.asOf ? 'Already up to date.' : `Updated to ${fmtDate(body.asOf)}.`);
       load();
+      reloadPaper();
       setBriefKey((k) => k + 1);
     } catch (e) {
       setSyncMsg((e as Error).message);
@@ -146,7 +155,15 @@ export default function App() {
       return next;
     });
   };
-  const openStock = useCallback((s: string) => setSelected(s), []);
+  const viewRef = useRef(view);
+  viewRef.current = view;
+  // on the Chart tab a stock opens in the chart itself; elsewhere it opens the side panel
+  const openStock = useCallback((s: string) => (viewRef.current === 'chart' ? setChartSymbol(s) : setSelected(s)), []);
+  const openChart = useCallback((s: string) => {
+    setChartSymbol(s);
+    setSelected(null);
+    setView('chart');
+  }, []);
   const rowOf = useMemo(() => new Map((data?.rows ?? []).map((r) => [r.s, r])), [data]);
 
   const update = (patch: Partial<Filters>) => {
@@ -218,7 +235,7 @@ export default function App() {
   if (loadError && !data) {
     return (
       <div className="empty-app">
-        <h1>NSE Screener</h1>
+        <h1>{APP_NAME}</h1>
         <p>No market data has been downloaded yet.</p>
         <button className="primary" onClick={refresh} disabled={syncing}>
           {syncing ? 'Downloading a year of NSE data…' : 'Download NSE data'}
@@ -231,15 +248,17 @@ export default function App() {
 
   return (
     <div className={`app view-${view} ${selectedRow && view === 'screener' ? 'with-detail' : ''}`}>
-      <header className="top">
-        <div className="brand">
+      {view === 'home' && <Home data={data} onGo={setView} onPick={openStock} theme={theme} onTheme={nextTheme} />}
+
+      {view !== 'home' && <header className="top">
+        <button className="brand" onClick={() => setView('home')} title={`${APP_NAME} home`}>
           <span className="logo" aria-hidden>
             <svg viewBox="0 0 24 24" width="22" height="22"><path d="M3 17l5-6 4 3 6-9" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" /><circle cx="18" cy="5" r="2.2" fill="currentColor" /></svg>
           </span>
-          <h1>NSE Screener</h1>
-        </div>
+          <h1>{APP_NAME}</h1>
+        </button>
         <nav className="tabs" role="tablist" aria-label="Sections">
-          {([['brief', 'Brief'], ['screener', 'Screener'], ['news', 'News'], ['backtest', 'Backtest']] as const).map(([id, label]) => (
+          {([['brief', 'Brief'], ['screener', 'Screener'], ['chart', 'Chart'], ['paper', 'Paper'], ['options', 'Options'], ['news', 'News'], ['backtest', 'Backtest']] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={view === id} className={view === id ? 'on' : ''} onClick={() => setView(id)}>
               <Icon name={id} />
               {label}
@@ -263,7 +282,7 @@ export default function App() {
             <Icon name={theme === 'auto' ? 'auto' : theme === 'dark' ? 'moon' : 'sun'} />
           </button>
         </div>
-      </header>
+      </header>}
 
       {view === 'brief' && (
         <Brief
@@ -276,9 +295,30 @@ export default function App() {
           onOpenStock={openStock}
           rowOf={rowOf}
           onGoScreener={() => setView('screener')}
+          onRebuilt={reloadPaper}
           onOpenFilters={(f) => { setFilters({ ...EMPTY, ...f }); setPreset(null); setWatchOnly(false); setShown(PAGE); setView('screener'); }}
         />
       )}
+
+      {view === 'chart' && (
+        <ChartTab
+          symbol={chartSymbol ?? selected ?? Object.keys(watchlist)[0] ?? (rowOf.has('RELIANCE') ? 'RELIANCE' : data.rows[0].s)}
+          onSymbol={setChartSymbol}
+          rowOf={rowOf}
+          results={visible}
+          watchlist={watchlist}
+          paper={paper}
+          theme={theme}
+          drawings={drawings}
+          onSaveDrawings={saveDrawings}
+          onToggleWatch={toggleWatch}
+          onSetLevel={(s, level) => saveWatchlist((prev) => ({ ...prev, [s]: { ...(prev[s] ?? { added: data.asOf, note: '' }), level } }))}
+        />
+      )}
+
+      {view === 'paper' && <PaperTab paper={paper} onSave={savePaper} onReload={reloadPaper} rowOf={rowOf} asOf={data.asOf} onOpenStock={openStock} onGoScreener={() => setView('screener')} />}
+
+      {view === 'options' && <Options key={briefKey} />}
 
       {view === 'news' && <News key={briefKey} watchlist={watchlist} rowOf={rowOf} onOpenStock={openStock} />}
 
@@ -299,11 +339,26 @@ export default function App() {
                 <span>★ Watchlist</span> <small>{Object.keys(watchlist).length}</small>
               </button>
             </li>
-            {PRESETS.map((p) => (
+            {PRESETS.filter((p) => !p.group).map((p) => (
               <li key={p.id}>
                 <button className={preset === p.id ? 'on' : ''} onClick={() => applyPreset(p.id)} title={p.blurb}>
                   <span>{p.label}</span>
                   {preset === p.id && p.id !== 'all' && <em>{p.blurb}</em>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <h3>Chart patterns</h3>
+          <ul className="presets">
+            {PRESETS.filter((p) => p.group === 'pattern').map((p) => (
+              <li key={p.id}>
+                <button className={preset === p.id ? 'on' : ''} onClick={() => applyPreset(p.id)} title={p.blurb}>
+                  <span>{p.label}</span>
+                  <small>{data.rows.filter((r) => r.pat.includes(p.filters.flags![0] as never)).length}</small>
+                  {preset === p.id && <em>{p.blurb}</em>}
                 </button>
               </li>
             ))}
@@ -464,6 +519,7 @@ export default function App() {
                     {r.newLo === 1 && <mark className="lo" title="New 52-week low today">52W L</mark>}
                     {r.nextEx && <mark className="ex" title={`${r.nextEx.text}, ex-date ${fmtDate(r.nextEx.ex)}`}>EX {fmtDate(r.nextEx.ex, false)}</mark>}
                     {r.bm?.results && <mark className="res" title={`Board meeting to consider results on ${fmtDate(r.bm.date)}`}>RESULTS {fmtDate(r.bm.date, false)}</mark>}
+                    {r.pat.map((p) => <mark key={p} className="pat" title={`Chart pattern: ${PATTERN_LABEL[p]}`}>{PATTERN_LABEL[p]}</mark>)}
                     {r.ban === 1 && <mark className="lo" title="In the F&O ban period: no new derivative positions allowed">BAN</mark>}
                     <small>
                       {r.name}
@@ -497,15 +553,20 @@ export default function App() {
         </footer>
       </main>}
 
-      {selectedRow && view !== 'screener' && <div className="scrim" onClick={closeDetail} />}
-      {selectedRow && (
+      {selectedRow && view !== 'screener' && view !== 'chart' && <div className="scrim" onClick={closeDetail} />}
+      {selectedRow && view !== 'chart' && (
         <Detail
+          onOpenChart={() => openChart(selectedRow.s)}
           key={view === 'screener' ? 'docked' : 'floating'}
           floating={view !== 'screener'}
           row={selectedRow}
           onClose={closeDetail}
           watch={watchlist[selectedRow.s] ?? null}
           onToggleWatch={() => toggleWatch(selectedRow.s)}
+          paper={paper}
+          onSavePaper={savePaper}
+          asOf={data.asOf}
+          rowOf={rowOf}
           onEditWatch={(patch) => saveWatchlist((prev) => ({ ...prev, [selectedRow.s]: { ...prev[selectedRow.s], ...patch } }))}
         />
       )}

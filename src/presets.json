@@ -320,5 +320,110 @@
       "foOiChg",
       -1
     ]
+  },
+  {
+    "id": "p-tight",
+    "group": "pattern",
+    "label": "Tight base near highs",
+    "blurb": "After a run-up, price has moved in a narrow range for three weeks on falling volume, within 15% of its 52-week high.",
+    "filters": {
+      "flags": [
+        "tightBase"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          2,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "rs",
+      -1
+    ]
+  },
+  {
+    "id": "p-break",
+    "group": "pattern",
+    "label": "Base breakout",
+    "blurb": "First close above a five-week sideways range no wider than 15%, on at least 1.5× average volume.",
+    "filters": {
+      "flags": [
+        "baseBreak"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          2,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "volX",
+      -1
+    ]
+  },
+  {
+    "id": "p-flag",
+    "group": "pattern",
+    "label": "Bull flag",
+    "blurb": "A run-up of 18% or more in two weeks, followed by a shallow pullback on lower volume that has not broken the high.",
+    "filters": {
+      "flags": [
+        "flag"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          2,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "rs",
+      -1
+    ]
+  },
+  {
+    "id": "p-cup",
+    "group": "pattern",
+    "label": "Cup with handle",
+    "blurb": "A 12–35% rounded decline and recovery to the old high over one to six months, now pulling back slightly below it.",
+    "filters": {
+      "flags": [
+        "cup"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          2,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "rs",
+      -1
+    ]
+  },
+  {
+    "id": "p-dbl",
+    "group": "pattern",
+    "label": "Double bottom breakout",
+    "blurb": "Two lows within 3.5% of each other, and today the first close above the peak between them.",
+    "filters": {
+      "flags": [
+        "dblBottom"
+      ],
+      "ranges": {
+        "avgTurnover": [
+          2,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "volX",
+      -1
+    ]
   }
 ]

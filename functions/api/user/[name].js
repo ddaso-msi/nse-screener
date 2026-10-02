@@ -2,7 +2,12 @@
 // GitHub Action reads the same keys before it builds the brief.
 import defaultScreens from '../../../scripts/default-screens.json';
 
-const DEFAULTS = { watchlist: {}, screens: defaultScreens };
+const DEFAULTS = {
+  watchlist: {},
+  drawings: {},
+  screens: defaultScreens,
+  paper: { start: 1000000, cash: 1000000, orders: [], positions: [], closed: [], equity: [], notices: [], last: null },
+};
 const MAX_BYTES = 200_000;
 const json = (value, status = 200) =>
   new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json', 'cache-control': 'no-store' } });

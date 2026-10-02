@@ -4,6 +4,9 @@ import { fmtPct, fmtPrice, type Row } from './data';
 const PATHS = {
   brief: 'M3 12.5h10M8 3v2M3.4 6.4l1.4 1.4M12.6 6.4l-1.4 1.4M4.5 12.5a3.5 3.5 0 0 1 7 0',
   screener: 'M2.5 3.5h11l-4.2 5v4l-2.6 1v-5z',
+  chart: 'M4 2.5v11M4 5h0M4 5.5v4.5M8 4v9.5M8 6.5v4M12 2.5v9M12 4v4.5M3 5.5h2v4.5H3zM7 6.5h2v4H7zM11 4h2v4.5h-2z',
+  paper: 'M2.5 12.5l3.5-4 2.5 2.5 5-6.5M10 4.5h3.5V8',
+  options: 'M2 12.5c3 0 3.5-9 6-9s3 9 6 9M2 8h12',
   news: 'M3 3.5h8v9H4a1 1 0 0 1-1-1zM11 6h2v5.5a1 1 0 0 1-2 0M5 6h4M5 8.5h4M5 11h2.5',
   backtest: 'M2.5 8a5.5 5.5 0 1 0 1.7-4M2.5 3v2.5H5M8 5v3.2l2 1.3',
   search: 'M7 12A5 5 0 1 0 7 2a5 5 0 0 0 0 10zM10.6 10.6 14 14',

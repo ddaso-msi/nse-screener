@@ -65,9 +65,11 @@ function weekday(key: number) {
   return new Date(Math.floor(key / 10000), (Math.floor(key / 100) % 100) - 1, key % 100).toLocaleDateString('en-IN', { weekday: 'long' });
 }
 
-export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, current, onOpenStock, onOpenFilters, rowOf, onGoScreener }: {
+export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, current, onOpenStock, onOpenFilters, rowOf, onGoScreener, onRebuilt }: {
   rowOf: Map<string, Row>;
   onGoScreener: () => void;
+  /** Called after the brief is rebuilt (which also advances the paper account) */
+  onRebuilt?: () => void;
   watchlist: Watchlist;
   onToggleWatch: (s: string) => void;
   screens: BriefScreen[];
@@ -103,6 +105,7 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
       const body = await res.json().catch(() => null);
       if (!res.ok || !body) throw new Error(body?.error ?? 'Updating the brief needs the dev server (npm run dev), or run npm run brief.');
       load();
+      onRebuilt?.();
     } catch (e) {
       setError((e as Error).message);
     } finally {

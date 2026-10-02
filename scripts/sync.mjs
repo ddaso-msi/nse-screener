@@ -8,9 +8,10 @@
 import { mkdir, readFile, writeFile, stat, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
+import { buildOptions, derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
 import { buildNews, fetchFilings, loadFilings } from './news.mjs';
+import { detectPatterns } from './patterns.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = path.join(ROOT, 'data/raw');
@@ -18,7 +19,7 @@ const OUT = path.join(ROOT, 'public/data');
 const UA =
   'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0 Safari/537.36';
 
-const LOOKBACK_CALENDAR_DAYS = 420; // ~285 sessions: enough for 200-DMA + 52-week range
+const LOOKBACK_CALENDAR_DAYS = 1100; // ~3 years of sessions, so the full chart has history to show
 const SERIES = new Set(['EQ', 'BE', 'BZ']);
 const CONCURRENCY = 4;
 
@@ -385,10 +386,10 @@ export async function sync({ log = console.log } = {}) {
   const files = await fetchDays(log);
 
   log('Fetching corporate actions, market cap and P/E…');
-  await fetchExtras(log, LOOKBACK_CALENDAR_DAYS + 400); // dividend yield and earnings growth look a year back
+  await fetchExtras(log, LOOKBACK_CALENDAR_DAYS);
   const fund = await loadFundamentals();
   log('Fetching derivatives and filings…');
-  await fetchDerivatives(log, LOOKBACK_CALENDAR_DAYS + 400); // IV rank looks a year back
+  await fetchDerivatives(log, LOOKBACK_CALENDAR_DAYS);
   const deriv = await loadDerivatives();
   await fetchFilings(log);
 
@@ -425,6 +426,7 @@ export async function sync({ log = console.log } = {}) {
     const ds = derivativeSeries(symbol, bars, deriv);
     const inFo = ds.any && deriv.days.get(latest)?.stocks[symbol] != null;
     const filed = filings.get(symbol);
+    const patterns = detectPatterns(bars).latest;
     const pe = r2(fs.pe[at]);
     // dividends, splits, bonuses etc. from the last year, plus anything announced ahead
     const acts = [...new Map(actions.filter((a) => a.ex > latest - 10000).map((a) => [`${a.ex}|${a.text}`, { ex: a.ex, text: a.text }])).values()];
@@ -449,6 +451,7 @@ export async function sync({ log = console.log } = {}) {
       ivRank: inFo ? r1(ds.m.ivRank[at]) : null,
       build: !inFo ? null : ds.f.longBuild[at] ? 'LB' : ds.f.shortBuild[at] ? 'SB' : ds.f.shortCover[at] ? 'SC' : ds.f.longUnwind[at] ? 'LU' : null,
       ban: deriv.ban.includes(symbol) ? 1 : 0,
+      pat: patterns.map((p) => p.code),
       // filings
       bm: filed?.meetings.find((m) => m.date >= latest) ?? null,
       filed: (filed?.filings ?? []).filter((f) => f.key && f.date === latest).slice(0, 3).map((f) => f.subject),
@@ -464,8 +467,11 @@ export async function sync({ log = console.log } = {}) {
         c: bars.map((b) => r2(b.c)),
         v: bars.map((b) => Math.round(b.v)),
         dl: bars.map((b) => b.deliv),
+        // futures open interest per session, for the chart's OI pane (F&O stocks only)
+        ...(inFo ? { oi: bars.map((b) => deriv.days.get(b.date)?.stocks[symbol]?.oi ?? null) } : {}),
         ca,
         acts,
+        pat: patterns,
       }),
     );
   }
@@ -481,7 +487,19 @@ export async function sync({ log = console.log } = {}) {
   });
   rows.sort((a, b) => (b.avgTurnover ?? 0) - (a.avgTurnover ?? 0));
 
+  // index closes, for comparing a stock with the market on the chart
+  const indexHistory = {};
+  for (const d of dates) {
+    for (const [name, x] of Object.entries(deriv.idx.get(d) ?? {})) {
+      const h = (indexHistory[name] ??= { d: [], c: [] });
+      h.d.push(d);
+      h.c.push(x.close);
+    }
+  }
+  await writeFile(path.join(OUT, 'idx.json'), JSON.stringify(indexHistory));
+
   await buildNews({ names, filings, asOf: latest, log });
+  await buildOptions({ deriv, rowOf: new Map(rows.map((r) => [r.s, r])), asOf: latest, log });
 
   const meta = {
     asOf: latest,

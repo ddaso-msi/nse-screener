@@ -11,14 +11,16 @@
 // A raw F&O bhavcopy is ~6 MB, so each session is reduced to a small summary
 // (data/raw/fo/DDMMYYYY.json) and the download is discarded.
 
-import { mkdir, readFile, readdir, writeFile, stat } from 'node:fs/promises';
+import { mkdir, readFile, readdir, writeFile, stat, rm } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { download, unzip } from './fundamentals.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RAW = path.join(ROOT, 'data/raw');
-const DIRS = { fo: path.join(RAW, 'fo'), poi: path.join(RAW, 'poi'), idx: path.join(RAW, 'idx') };
+const DIRS = { fo: path.join(RAW, 'fo'), poi: path.join(RAW, 'poi'), idx: path.join(RAW, 'idx'), chain: path.join(RAW, 'fo-chain') };
+const OUT = path.join(ROOT, 'public/data');
+const CHAIN_INDICES = new Set(['NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'NIFTYNXT50']);
 const UDIFF_FROM = 20240708; // NSE switched bhavcopy formats on this date
 const INDEX_FUTURES = new Set(['NIFTY', 'BANKNIFTY']);
 const KEEP_INDICES = ['Nifty 50', 'Nifty Bank', 'India VIX', 'Nifty Midcap 150', 'Nifty Smallcap 250', 'Nifty 500'];
@@ -75,6 +77,7 @@ function parseRows(text, date) {
         oi: +c[22],
         chg: +c[23],
         vol: +c[24],
+        lot: +c[28] || null,
       });
     } else {
       const [d, m, y] = c[2].split('-');
@@ -90,6 +93,7 @@ function parseRows(text, date) {
         oi: +c[12],
         chg: +c[13],
         vol: +c[10],
+        lot: null,
       });
     }
   }
@@ -149,6 +153,21 @@ function summarise(text, date) {
   return out;
 }
 
+// The full option chain for one session, kept only for the latest session
+// (the Options tab works from it): per underlying, every future and option.
+function chainOf(text, date) {
+  const u = {};
+  for (const r of parseRows(text, date)) {
+    if (r.index && !CHAIN_INDICES.has(r.symbol)) continue;
+    const x = (u[r.symbol] ??= { index: r.index, spot: null, lot: null, futs: [], opts: [] });
+    if (Number.isFinite(r.spot) && r.spot > 0) x.spot = r.spot;
+    if (r.lot) x.lot = r.lot;
+    if (r.fut) x.futs.push([r.expiry, r.settle, r.oi, r.chg, r.vol]);
+    else if (r.oi > 0 || r.vol > 0) x.opts.push([r.expiry, r.strike, r.call ? 1 : 0, r.settle, r.oi, r.chg, r.vol]);
+  }
+  return { date, u };
+}
+
 // ---------- Download ----------
 /** Fetches whatever is missing for every session we hold a bhavcopy for. Run after fetchDays(). */
 export async function fetchDerivatives(log = () => {}, lookbackDays = Infinity) {
@@ -160,12 +179,14 @@ export async function fetchDerivatives(log = () => {}, lookbackDays = Infinity) 
     .sort((a, b) => tagDate(a) - tagDate(b))
     .filter((t) => Date.UTC(+t.slice(4), +t.slice(2, 4) - 1, +t.slice(0, 2)) >= cutoff);
   const recent = new Set(tags.slice(-3)); // may not be published yet: retried next time
+  const newest = tags[tags.length - 1];
 
   const jobs = [];
   for (const tag of tags) {
     const date = tagDate(tag);
     const ymd = String(date);
-    if (!(await exists(path.join(DIRS.fo, `${tag}.json`)))) {
+    const wantChain = tag === newest && !(await exists(path.join(DIRS.chain, `${tag}.json`)));
+    if (wantChain || !(await exists(path.join(DIRS.fo, `${tag}.json`)))) {
       jobs.push(async () => {
         const urls = [];
         if (date >= UDIFF_FROM) urls.push(`https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_${ymd}_F_0000.csv.zip`);
@@ -177,7 +198,11 @@ export async function fetchDerivatives(log = () => {}, lookbackDays = Infinity) 
         for (const url of urls) {
           const zip = await download(url);
           const csv = zip && Object.values(unzip(zip))[0];
-          if (csv) { summary = summarise(csv.toString('utf8'), date); break; }
+          if (!csv) continue;
+          const text = csv.toString('utf8');
+          summary = summarise(text, date);
+          if (wantChain) await writeFile(path.join(DIRS.chain, `${tag}.json`), JSON.stringify(chainOf(text, date)));
+          break;
         }
         if (summary || !recent.has(tag)) await writeFile(path.join(DIRS.fo, `${tag}.json`), JSON.stringify(summary ?? {}));
       });
@@ -214,6 +239,7 @@ export async function fetchDerivatives(log = () => {}, lookbackDays = Infinity) 
       }
     }),
   );
+  for (const f of await readdir(DIRS.chain)) if (f.slice(0, 8) !== newest) await rm(path.join(DIRS.chain, f));
   log(`  ${total} derivatives file(s) requested`);
 }
 
@@ -362,4 +388,109 @@ export function indexPositioning(deriv, date) {
     participants: now && ['FII', 'Client', 'Pro', 'DII'].map((k) => ({ who: k, net: now[k].net, longShare: now[k].longShare, netChg: before ? now[k].net - before[k].net : null })),
     ban: deriv.ban,
   };
+}
+
+
+// ---------- Options workspace data ----------
+const fileSafe = (symbol) => symbol.replace(/[^A-Za-z0-9]/g, '_');
+const INDEX_NAMES = { NIFTY: 'Nifty 50', BANKNIFTY: 'Nifty Bank', FINNIFTY: 'Nifty Financial Services', MIDCPNIFTY: 'Nifty Midcap Select', NIFTYNXT50: 'Nifty Next 50' };
+
+/**
+ * Writes the Options tab's data from the latest session's chain:
+ *   public/data/options.json      one line per underlying
+ *   public/data/o/<SYMBOL>.json   its chain: per expiry, per strike, both sides with IV
+ * `rowOf` supplies names, day change and IV rank for stocks.
+ */
+export async function buildOptions({ deriv, rowOf, asOf, log = () => {} }) {
+  const file = (await readdir(DIRS.chain).catch(() => [])).find((f) => tagDate(f.slice(0, 8)) === asOf);
+  await rm(path.join(OUT, 'o'), { recursive: true, force: true });
+  if (!file) {
+    await rm(path.join(OUT, 'options.json'), { force: true });
+    log('Options: no chain published for the latest session yet');
+    return;
+  }
+  await mkdir(path.join(OUT, 'o'), { recursive: true });
+  const { u } = JSON.parse(await readFile(path.join(DIRS.chain, file), 'utf8'));
+  const levels = deriv.idx.get(asOf) ?? {};
+  const list = [];
+
+  for (const [s, x] of Object.entries(u)) {
+    const futs = x.futs.sort((a, b) => a[0] - b[0]);
+    const row = rowOf.get(s);
+    const spot = x.spot ?? row?.close ?? futs[0]?.[1];
+    if (!(spot > 0) || !x.opts.length) continue;
+
+    const byExpiry = new Map();
+    for (const o of x.opts) (byExpiry.get(o[0]) ?? byExpiry.set(o[0], []).get(o[0])).push(o);
+    const expiries = [...byExpiry.keys()].sort((a, b) => a - b).map((date) => {
+      const days = Math.max(0, dayNumber(date) - dayNumber(asOf));
+      const T = Math.max(days, 0.5) / 365;
+      const strikes = new Map();
+      for (const [, k, call, settle, oi, chg, vol] of byExpiry.get(date)) {
+        const r = strikes.get(k) ?? strikes.set(k, [k, null, 0, 0, 0, null, null, 0, 0, 0, null]).get(k);
+        const at = call ? 1 : 6;
+        r[at] = settle; r[at + 1] = oi; r[at + 2] = chg; r[at + 3] = vol;
+      }
+      const rows = [...strikes.values()].sort((a, b) => a[0] - b[0]);
+      // The forward price the options themselves imply (put-call parity at the
+      // strike nearest the spot). Using it instead of the spot keeps call and
+      // put IVs at the same strike consistent.
+      const both = rows.filter((r) => r[1] > 0 && r[6] > 0);
+      const near = both.reduce((best, r) => (!best || Math.abs(r[0] - spot) < Math.abs(best[0] - spot) ? r : best), null);
+      const fwd = near ? near[0] + (near[1] - near[6]) * Math.exp(RATE * T) : spot * Math.exp(RATE * T);
+      const base = fwd * Math.exp(-RATE * T);
+      for (const r of rows) {
+        r[5] = r[1] > 0 ? r2(impliedVol(true, base, r[0], T, r[1])) : null;
+        r[10] = r[6] > 0 ? r2(impliedVol(false, base, r[0], T, r[6])) : null;
+      }
+      let pain = null;
+      for (const [k] of rows) {
+        let pay = 0;
+        for (const r of rows) pay += Math.max(0, k - r[0]) * r[2] + Math.max(0, r[0] - k) * r[7];
+        if (!pain || pay < pain[1]) pain = [k, pay];
+      }
+      const callOi = rows.reduce((a, r) => a + r[2], 0);
+      const putOi = rows.reduce((a, r) => a + r[7], 0);
+      const atm = rows.reduce((best, r) => (Math.abs(r[0] - spot) < Math.abs(best[0] - spot) ? r : best), rows[0]);
+      const ivs = [atm[5], atm[10]].filter((v) => v != null);
+      const fut = futs.find((f) => f[0] === date);
+      return {
+        date, days,
+        fwd: r2(fwd),
+        fut: fut ? { price: fut[1], oi: fut[2], chg: fut[3] } : null,
+        atmIv: ivs.length ? r2(ivs.reduce((a, b) => a + b, 0) / ivs.length) : null,
+        pcr: callOi > 0 ? r2(putOi / callOi) : null,
+        maxPain: pain?.[0] ?? null,
+        callOi, putOi,
+        strikes: rows,
+      };
+    });
+
+    // IV rank: stocks get it from the screener row, indices from their own history
+    let ivRank = row?.ivRank ?? null;
+    const today = deriv.days.get(asOf);
+    const iv = x.index ? today?.index[s]?.iv ?? expiries[0].atmIv : today?.stocks[s]?.iv ?? expiries[0].atmIv;
+    if (x.index && iv != null) {
+      const past = deriv.dates.slice(-252).map((d) => deriv.days.get(d).index?.[s]?.iv).filter((v) => v != null);
+      if (past.length >= 60) ivRank = r2((past.filter((v) => v < iv).length / past.length) * 100);
+    }
+    const level = levels[INDEX_NAMES[s]];
+    const head = {
+      s,
+      name: x.index ? INDEX_NAMES[s] ?? s : row?.name ?? s,
+      index: x.index,
+      spot: r2(spot),
+      chg: x.index ? level?.chg ?? null : row?.chg ?? null,
+      lot: x.lot,
+      iv: iv ?? null,
+      ivRank,
+      pcr: expiries[0].pcr,
+      oi: expiries.reduce((a, e) => a + e.callOi + e.putOi, 0),
+    };
+    list.push({ ...head, expiries: expiries.map((e) => e.date) });
+    await writeFile(path.join(OUT, 'o', `${fileSafe(s)}.json`), JSON.stringify({ ...head, asOf, expiries }));
+  }
+  list.sort((a, b) => Number(b.index) - Number(a.index) || b.oi - a.oi);
+  await writeFile(path.join(OUT, 'options.json'), JSON.stringify({ asOf, rate: RATE, list }));
+  log(`Options: chains for ${list.length} underlyings`);
 }

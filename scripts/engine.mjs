@@ -10,6 +10,7 @@
 
 import { derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
+import { PATTERNS, detectPatterns } from './patterns.mjs';
 import { adjust, cachedList, fetchDays, loadHistory, rankTo99, rsScore } from './sync.mjs';
 
 export const DEFAULT_LOOKBACK = 1100; // calendar days, ~3 years
@@ -25,7 +26,7 @@ const METRICS = [
 // the rest are filled in by fundamentalSeries() and derivativeSeries()
 const COMPUTED = METRICS.slice(0, METRICS.indexOf('mcap'));
 const PRICE_FLAGS = ['newHi', 'newLo', 'golden', 'death'];
-const FLAGS = [...PRICE_FLAGS, 'longBuild', 'shortBuild', 'shortCover', 'longUnwind'];
+const FLAGS = [...PRICE_FLAGS, 'longBuild', 'shortBuild', 'shortCover', 'longUnwind', ...PATTERNS];
 const INDEX_LISTS = [
   ['N50', 'ind_nifty50list'],
   ['NN50', 'ind_niftynext50list'],
@@ -151,6 +152,7 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
     const ds = derivativeSeries(symbol, bars, deriv);
     Object.assign(cols.m, ds.m);
     Object.assign(cols.f, ds.f);
+    Object.assign(cols.f, detectPatterns(bars).flags);
     symbols.push({
       s: symbol,
       fo: ds.any,

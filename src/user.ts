@@ -25,7 +25,7 @@ function useUserFile<T>(name: string, initial: T) {
   const latest = useRef(initial); // so back-to-back edits build on each other, not on a stale render
   const key = `nse-screener.${name}`;
 
-  useEffect(() => {
+  const reload = useCallback(() => {
     fetch(`/api/user/${name}`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .catch(() => JSON.parse(localStorage.getItem(key) ?? 'null') ?? initial)
@@ -36,6 +36,7 @@ function useUserFile<T>(name: string, initial: T) {
       });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [name]);
+  useEffect(reload, [reload]);
 
   const save = useCallback(
     (update: T | ((prev: T) => T)) => {
@@ -50,8 +51,34 @@ function useUserFile<T>(name: string, initial: T) {
     },
     [key, name],
   );
-  return [value, save, loaded] as const;
+  return [value, save, loaded, reload] as const;
 }
+
+export interface PaperOrder { id: number; s: string; qty: number; stop: number | null; target: number | null; note: string; placed: number }
+export interface PaperPosition {
+  id: number; s: string; qty: number; entry: number; entryDate: number; ref: number;
+  stop: number | null; target: number | null; note: string;
+  /** Session on which a sale at the next open was requested */
+  sell?: number;
+}
+export interface PaperClosed { s: string; qty: number; entry: number; entryDate: number; exit: number; exitDate: number; reason: string; pnl: number; pct: number; note: string }
+export interface Paper {
+  start: number;
+  cash: number;
+  orders: PaperOrder[];
+  positions: PaperPosition[];
+  closed: PaperClosed[];
+  equity: { date: number; value: number; nifty: number | null }[];
+  notices: { date: number; text: string }[];
+  last: number | null;
+}
+export const PAPER_FEE = 0.0015;
+export const NEW_PAPER: Paper = { start: 1000000, cash: 1000000, orders: [], positions: [], closed: [], equity: [], notices: [], last: null };
+export const usePaper = () => useUserFile<Paper>('paper', NEW_PAPER);
+
+/** A line drawn on a stock's chart. Dates are YYYYMMDD so a drawing survives a change of timeframe. */
+export interface Drawing { id: number; type: 'h' | 't'; d1: number; p1: number; d2?: number; p2?: number }
+export const useDrawings = () => useUserFile<Record<string, Drawing[]>>('drawings', {});
 
 export const useWatchlist = () => useUserFile<Watchlist>('watchlist', {});
 export const useBriefScreens = () => useUserFile<BriefScreen[]>('screens', []);

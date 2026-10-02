@@ -26,8 +26,16 @@ export const DEFAULT_SCREENS = JSON.parse(
   await readFile(path.join(ROOT, 'scripts/default-screens.json'), 'utf8'),
 );
 
-const FILES = { watchlist: 'watchlist.json', screens: 'screens.json', log: 'log.json' };
-const DEFAULTS = { watchlist: {}, screens: DEFAULT_SCREENS, log: [] };
+const FILES = { watchlist: 'watchlist.json', screens: 'screens.json', log: 'log.json', paper: 'paper.json', drawings: 'drawings.json' };
+export const PAPER_START = 1000000;
+const DEFAULTS = {
+  watchlist: {},
+  screens: DEFAULT_SCREENS,
+  log: [],
+  drawings: {},
+  paper: { start: PAPER_START, cash: PAPER_START, orders: [], positions: [], closed: [], equity: [], notices: [], last: null },
+};
+const PAPER_FEE = 0.0015; // brokerage, STT and slippage, charged on each side
 
 export async function readUser(name) {
   try {
@@ -131,6 +139,95 @@ function marketContext(universe) {
   };
 }
 
+/**
+ * Moves the paper-trading account forward to the latest session, one session
+ * at a time: orders fill at the next session's open, then stops and targets
+ * are checked against each day's range (a stop and a target touched on the
+ * same day count as the stop; a gap through a level fills at the open).
+ */
+export function processPaper(paper, universe) {
+  const { dates } = universe;
+  const latest = dates[dates.length - 1];
+  const bySymbol = new Map(universe.symbols.map((sym) => [sym.s, sym]));
+  const round = (x) => Math.round(x * 100) / 100;
+  paper.notices ??= [];
+  const nifty = (d) => universe.deriv?.idx.get(d)?.['Nifty 50']?.close ?? null;
+  if (paper.last == null) {
+    paper.last = latest;
+    paper.equity = [{ date: latest, value: paper.cash, nifty: nifty(latest) }];
+    return paper;
+  }
+
+  // a split or bonus since entry changes the price scale: restate the position to match
+  for (const p of paper.positions) {
+    const sym = bySymbol.get(p.s);
+    const i = sym ? sym.date.indexOf(p.entryDate) : -1;
+    if (i < 0 || !p.ref) continue;
+    const k = sym.c[i] / p.ref;
+    if (Math.abs(k - 1) > 0.005) {
+      p.entry = round(p.entry * k);
+      if (p.stop) p.stop = round(p.stop * k);
+      if (p.target) p.target = round(p.target * k);
+      p.qty = Math.round(p.qty / k);
+      p.ref = sym.c[i];
+    }
+  }
+
+  const close = (p, price, date, reason) => {
+    const proceeds = price * p.qty * (1 - PAPER_FEE);
+    const cost = p.entry * p.qty * (1 + PAPER_FEE);
+    paper.cash = round(paper.cash + proceeds);
+    paper.closed.unshift({
+      s: p.s, qty: p.qty, entry: p.entry, entryDate: p.entryDate, exit: round(price), exitDate: date, reason,
+      pnl: round(proceeds - cost), pct: round((proceeds / cost - 1) * 100), note: p.note ?? '',
+    });
+    paper.positions = paper.positions.filter((x) => x !== p);
+  };
+
+  for (const d of dates.filter((x) => x > paper.last)) {
+    for (const p of [...paper.positions]) {
+      const sym = bySymbol.get(p.s);
+      const t = sym ? sym.date.indexOf(d) : -1;
+      if (t < 0) continue; // not traded that day
+      if (p.sell && p.sell < d) close(p, sym.o[t], d, 'Sold at the open');
+      else if (p.stop && sym.o[t] <= p.stop) close(p, sym.o[t], d, 'Stop hit on a gap down');
+      else if (p.stop && sym.l[t] <= p.stop) close(p, p.stop, d, 'Stop hit');
+      else if (p.target && sym.o[t] >= p.target) close(p, sym.o[t], d, 'Target hit on a gap up');
+      else if (p.target && sym.h[t] >= p.target) close(p, p.target, d, 'Target hit');
+    }
+    for (const o of [...paper.orders]) {
+      if (o.placed >= d) continue;
+      const sym = bySymbol.get(o.s);
+      const t = sym ? sym.date.indexOf(d) : -1;
+      if (t < 0) continue;
+      paper.orders = paper.orders.filter((x) => x !== o);
+      const price = sym.o[t];
+      const qty = Math.min(o.qty, Math.floor(paper.cash / (price * (1 + PAPER_FEE))));
+      if (qty <= 0) {
+        paper.notices.unshift({ date: d, text: `${o.s}: order not filled, not enough cash` });
+        continue;
+      }
+      if (qty < o.qty) paper.notices.unshift({ date: d, text: `${o.s}: bought ${qty} of ${o.qty}, cash ran out` });
+      paper.cash = round(paper.cash - price * qty * (1 + PAPER_FEE));
+      const pos = { id: o.id, s: o.s, qty, entry: round(price), entryDate: d, ref: sym.c[t], stop: o.stop ?? null, target: o.target ?? null, note: o.note ?? '' };
+      paper.positions.push(pos);
+      if (pos.stop && sym.l[t] <= pos.stop) close(pos, pos.stop, d, 'Stop hit');
+      else if (pos.target && sym.h[t] >= pos.target) close(pos, pos.target, d, 'Target hit');
+    }
+    let value = paper.cash;
+    for (const p of paper.positions) {
+      const sym = bySymbol.get(p.s);
+      let t = sym ? sym.n - 1 : -1;
+      while (t >= 0 && sym.date[t] > d) t--;
+      value += p.qty * (t >= 0 ? sym.c[t] : p.entry);
+    }
+    paper.equity.push({ date: d, value: round(value), nifty: nifty(d) });
+  }
+  paper.notices = paper.notices.slice(0, 12);
+  paper.last = latest;
+  return paper;
+}
+
 export async function runBrief({ log = console.log, refresh = true } = {}) {
   const synced = refresh ? await sync({ log }) : null;
   log('Building the brief…');
@@ -140,6 +237,8 @@ export async function runBrief({ log = console.log, refresh = true } = {}) {
   const screener = JSON.parse(await readFile(path.join(OUT, 'screener.json'), 'utf8'));
   const rowOf = new Map(screener.rows.map((r) => [r.s, r]));
   const [watchlist, screens, entries] = await Promise.all([readUser('watchlist'), readUser('screens'), readUser('log')]);
+  const paper = processPaper(await readUser('paper'), universe);
+  await writeUser('paper', paper);
 
   const card = (s) => {
     const r = rowOf.get(s);

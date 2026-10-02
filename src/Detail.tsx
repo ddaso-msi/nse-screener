@@ -2,8 +2,8 @@ import { useEffect, useState } from 'react';
 import { Chart } from './Chart';
 import { NumInput } from './NumInput';
 import { Delta } from './ui';
-import type { WatchItem } from './user';
-import { BUILD_LABEL, CAP_LABEL, IDX_LABEL, fmtMcap, fileSafe, fmtCr, fmtDate, fmtPct, fmtPrice, fmtQty, type History, type Row } from './data';
+import { PAPER_FEE, type Paper, type WatchItem } from './user';
+import { BUILD_LABEL, CAP_LABEL, IDX_LABEL, PATTERN_LABEL, fmtMcap, fileSafe, fmtCr, fmtDate, fmtPct, fmtPrice, fmtQty, type History, type Row } from './data';
 
 const tone = (v: number | null) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 
@@ -21,15 +21,39 @@ function Stat({ label, value, cls = '' }: { label: string; value: string; cls?: 
   );
 }
 
-export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch, floating = false }: {
+export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEditWatch, floating = false, paper, onSavePaper, asOf, rowOf }: {
   row: Row;
   /** Shown as an overlay drawer instead of a docked column */
   floating?: boolean;
+  onOpenChart: () => void;
   onClose: () => void;
   watch: WatchItem | null;
   onToggleWatch: () => void;
   onEditWatch: (patch: Partial<WatchItem>) => void;
+  paper: Paper;
+  onSavePaper: (update: Paper | ((prev: Paper) => Paper)) => void;
+  asOf: number;
+  rowOf: Map<string, Row>;
 }) {
+  const [ticket, setTicket] = useState(false);
+  const [stop, setStop] = useState<number | null>(null);
+  const [target, setTarget] = useState<number | null>(null);
+  const [risk, setRisk] = useState<number | null>(1);
+  const [qtyEdit, setQtyEdit] = useState<number | null>(null);
+  useEffect(() => { setTicket(false); setStop(null); setTarget(null); setQtyEdit(null); }, [row.s]);
+
+  const held = paper.positions.find((p) => p.s === row.s);
+  const pending = paper.orders.find((o) => o.s === row.s);
+  const equity = paper.cash + paper.positions.reduce((v, p) => v + p.qty * (rowOf.get(p.s)?.close ?? p.entry), 0);
+  const perShare = stop != null && stop < row.close ? row.close - stop : null;
+  // size the position so that hitting the stop loses `risk`% of the account
+  const sized = perShare ? Math.floor((equity * ((risk ?? 1) / 100)) / perShare) : Math.floor((equity * 0.1) / row.close);
+  const affordable = Math.floor(paper.cash / (row.close * (1 + PAPER_FEE)));
+  const qty = Math.max(0, Math.min(qtyEdit ?? sized, affordable));
+  const placeOrder = () => {
+    onSavePaper((p) => ({ ...p, orders: [...p.orders, { id: Date.now(), s: row.s, qty, stop, target, note: watch?.note ?? '', placed: asOf }] }));
+    setTicket(false);
+  };
   const [hist, setHist] = useState<History | null>(null);
   const [error, setError] = useState(false);
   const [filed, setFiled] = useState<Filed | null>(null);
@@ -103,13 +127,46 @@ export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch, floati
         )}
       </div>
 
+      <div className="paperbox">
+        {held ? (
+          <p>Paper position: <b>{held.qty} shares</b> bought at ₹{fmtPrice(held.entry)} · <span className={tone(row.close - held.entry)}>{fmtPct((row.close / held.entry - 1) * 100)}</span>{held.stop ? ` · stop ₹${fmtPrice(held.stop)}` : ''}</p>
+        ) : pending ? (
+          <p>Paper order: buy <b>{pending.qty} shares</b> at the next open{pending.stop ? ` · stop ₹${fmtPrice(pending.stop)}` : ''}. <button className="link" onClick={() => onSavePaper((p) => ({ ...p, orders: p.orders.filter((o) => o !== pending) }))}>Cancel</button></p>
+        ) : !ticket ? (
+          <button onClick={() => setTicket(true)}>Paper trade this stock</button>
+        ) : (
+          <div className="ticket">
+            <label>Stop-loss ₹<NumInput label="Stop-loss price" placeholder="none" value={stop} onChange={(v) => { setStop(v); setQtyEdit(null); }} /></label>
+            <label>Target ₹<NumInput label="Target price" placeholder="none" value={target} onChange={setTarget} /></label>
+            <label title="How much of the account you lose if the stop is hit">Risk %<NumInput label="Risk percent of account" placeholder="1" value={risk} onChange={(v) => { setRisk(v); setQtyEdit(null); }} /></label>
+            <label>Shares<NumInput label="Shares" placeholder="0" value={qty} onChange={setQtyEdit} /></label>
+            <p className="note">
+              {qty} shares ≈ ₹{fmtPrice(qty * row.close)} of ₹{fmtPrice(paper.cash)} cash.
+              {perShare ? ` If the stop is hit you lose about ₹${fmtPrice(qty * perShare)} (${(((qty * perShare) / equity) * 100).toFixed(1)}% of the account).` : ' Set a stop to size the position by risk; without one it defaults to 10% of the account.'}
+              {stop != null && stop >= row.close && ' The stop must be below the price.'}
+            </p>
+            <div>
+              <button className="primary" onClick={placeOrder} disabled={qty <= 0 || (stop != null && stop >= row.close)}>Buy at the next open</button>
+              <button className="plain" onClick={() => setTicket(false)}>Cancel</button>
+            </div>
+          </div>
+        )}
+      </div>
+
       <div className="quote">
         <strong>₹{fmtPrice(row.close)}</strong>
         <Delta value={row.chg} />
         <span className="muted">today</span>
       </div>
 
+      <button className="link first open-chart" onClick={onOpenChart}>Open full chart with indicators and drawing tools →</button>
       {hist ? <Chart hist={hist} /> : <div className="chart-empty">{error ? 'Price history unavailable.' : 'Loading chart…'}</div>}
+
+      {row.pat.length > 0 && (
+        <p className="note">
+          Pattern detected: {row.pat.map((p) => PATTERN_LABEL[p]).join(', ')}. The shaded area on the chart shows the shape; the line is the pivot a breakout would need to clear.
+        </p>
+      )}
 
       {hist && hist.ca.length > 0 && (
         <p className="note">

@@ -47,7 +47,7 @@ jobs:
         if: env.CLOUDFLARE_API_TOKEN != ''
         run: |
           mkdir -p data/user
-          for name in watchlist screens; do
+          for name in watchlist screens paper; do
             if npx wrangler kv key get "$name" --binding USER --remote > "/tmp/$name.json" 2>/dev/null \
               && node -e "JSON.parse(require('fs').readFileSync('/tmp/$name.json', 'utf8'))" 2>/dev/null; then
               cp "/tmp/$name.json" "data/user/$name.json"
@@ -58,6 +58,9 @@ jobs:
           done
       - name: Build the brief
         run: node scripts/brief.mjs
+      - name: Return the paper-trading account to the hosted app
+        if: env.CLOUDFLARE_API_TOKEN != ''
+        run: npx wrangler kv key put paper --path data/user/paper.json --binding USER --remote
       - name: Save downloaded NSE files
         if: always()
         uses: actions/cache/save@v4

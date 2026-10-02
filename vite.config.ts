@@ -67,7 +67,7 @@ function syncApi(): Plugin {
       // nightly job can read them (browser storage would be invisible to it).
       server.middlewares.use('/api/user', async (req, res) => {
         const name = (req.url ?? '').split('?')[0].slice(1);
-        if (name !== 'watchlist' && name !== 'screens') {
+        if (name !== 'watchlist' && name !== 'screens' && name !== 'paper' && name !== 'drawings') {
           res.statusCode = 404;
           return res.end();
         }

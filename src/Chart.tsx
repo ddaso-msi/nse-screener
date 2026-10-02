@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { fmtDate, fmtPrice, fmtQty, monthOf, type History } from './data';
+import { PATTERN_LABEL, fmtDate, fmtPrice, fmtQty, monthOf, type History } from './data';
 
 const RANGES = [
   { id: '3M', n: 63 },
@@ -174,6 +174,18 @@ export function Chart({ hist }: { hist: History }) {
                 width={barW}
                 height={h}
               />
+            );
+          })}
+          {(hist.pat ?? []).map((p, pi) => {
+            // shade the pattern from where it starts to the latest bar, between its low and its pivot
+            const from = Math.max(0, idx.findIndex((i) => hist.d[i] >= p.from));
+            const top = y(Math.min(yMax, p.level)), bottom = y(Math.max(yMin, p.low));
+            return (
+              <g key={p.code} className="pattern">
+                <rect x={x(from)} y={top} width={Math.max(2, x(n - 1) - x(from))} height={Math.max(2, bottom - top)} />
+                <line x1={x(from)} x2={x(n - 1)} y1={top} y2={top} />
+                <text x={x(from) + 4} y={top - 5 - pi * 13}>{PATTERN_LABEL[p.code]} · pivot {fmtPrice(p.level)}</text>
+              </g>
             );
           })}
           <path className="line s-sma200" d={path(s200)} />
