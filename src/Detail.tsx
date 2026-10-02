@@ -134,6 +134,7 @@ export function Detail({ row, onClose, watch, onToggleWatch, onEditWatch }: {
         <Stat label="6 months" value={fmtPct(row.m6)} cls={tone(row.m6)} />
         <Stat label="1 year" value={fmtPct(row.y1)} cls={tone(row.y1)} />
         <Stat label="RSI (14)" value={row.rsi == null ? '–' : row.rsi.toFixed(1)} />
+        <Stat label="Relative strength" value={row.rs == null ? '–' : `${row.rs} of 99`} />
       </div>
 
       <h3>Trend</h3>

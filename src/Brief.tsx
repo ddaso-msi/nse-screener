@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { HOSTED, describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters } from './data';
+import { Market, type MarketData } from './Market';
 import type { BriefScreen, Watchlist } from './user';
 
 interface Card {
@@ -10,6 +11,7 @@ interface Card {
   volX: number | null;
   deliv: number | null;
   rsi: number | null;
+  rs?: number | null;
   vs50: number | null;
   vs200: number | null;
   fromHi: number | null;
@@ -45,6 +47,7 @@ interface LogEntry {
 interface BriefData {
   asOf: number;
   generatedAt: string;
+  market?: MarketData;
   screens: { id: string; label: string; filters: BriefScreen['filters']; total: number; fresh: Card[]; dropped: string[] }[];
   watchlist: WatchRow[];
   scoreboard: { id: string; label: string; logged: number; h5: Outcome | null; h10: Outcome | null; h20: Outcome | null }[];
@@ -152,6 +155,8 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
       </div>
       {error && <p className="note down">{error}</p>}
 
+      {brief.market && <Market market={brief.market} />}
+
       <h3>Watchlist</h3>
       {brief.watchlist.length === 0 ? (
         <p className="note">Nothing on your watchlist yet. Click the ☆ next to any stock here or in the Screener, then set a note and an alert level from its detail panel.</p>
@@ -213,6 +218,7 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
                     <th title="Volume vs 20-session average">Vol ×</th>
                     <th title="Delivery percentage">Deliv</th>
                     <th>RSI</th>
+                    <th title="Relative strength, 1–99">RS</th>
                     <th title="Price vs 50-day average">vs 50D</th>
                     <th title="Price vs 200-day average">vs 200D</th>
                     <th title="52-week high and distance from it">52W high</th>
@@ -234,6 +240,7 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
                       <td>{x1(c.volX, '×')}</td>
                       <td>{c.deliv == null ? '–' : `${c.deliv.toFixed(0)}%`}</td>
                       <td>{c.rsi == null ? '–' : c.rsi.toFixed(0)}</td>
+                      <td>{c.rs ?? '–'}</td>
                       <td className={tone(c.vs50)}>{fmtPct(c.vs50)}</td>
                       <td className={tone(c.vs200)}>{fmtPct(c.vs200)}</td>
                       <td>{fmtPrice(c.hi52)} <small className="muted">{fmtPct(c.fromHi)}</small></td>

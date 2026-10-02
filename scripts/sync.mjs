@@ -300,6 +300,25 @@ export function rsi(c, n = 14) {
   return loss === 0 ? 100 : 100 - 100 / (1 + gain / loss);
 }
 
+// Relative-strength score before ranking: recent quarters weighted more, in the
+// style of IBD's RS rating. Needs at least six months of history; the 9- and
+// 12-month legs are dropped (and the weights rescaled) for newer listings.
+export function rsScore(m3, m6, m9, y1) {
+  if (!Number.isFinite(m3) || !Number.isFinite(m6)) return null;
+  let sum = 0.4 * m3 + 0.2 * m6;
+  let weight = 0.6;
+  if (Number.isFinite(m9)) { sum += 0.2 * m9; weight += 0.2; }
+  if (Number.isFinite(y1)) { sum += 0.2 * y1; weight += 0.2; }
+  return sum / weight;
+}
+
+/** Turns raw scores into a 1-99 percentile rank, in place: items are [key, score]. */
+export function rankTo99(items) {
+  items.sort((a, b) => a[1] - b[1]);
+  const n = items.length;
+  return new Map(items.map(([key], i) => [key, n > 1 ? Math.round(1 + (98 * i) / (n - 1)) : 50]));
+}
+
 const r1 = (x) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
 const r2 = (x) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
 const pct = (a, b) => (a == null || b == null || b === 0 ? null : (a / b - 1) * 100);
@@ -337,6 +356,7 @@ function metrics(bars) {
     close: r2(close),
     chg: r2(pct(last.c, last.prev)),
     w1: r1(ret(5)), m1: r1(ret(21)), m3: r1(ret(63)), m6: r1(ret(126)), y1: r1(ret(252)),
+    rsRaw: rsScore(ret(63) ?? NaN, ret(126) ?? NaN, ret(189) ?? NaN, ret(252) ?? NaN),
     hi52: r2(hi52), lo52: r2(lo52),
     fromHi: r1(pct(close, hi52)), fromLo: r1(pct(close, lo52)),
     newHi: priorHi != null && n >= 120 && last.h >= priorHi ? 1 : 0,
@@ -425,6 +445,12 @@ export async function sync({ log = console.log } = {}) {
         acts,
       }),
     );
+  }
+  // relative strength: where each stock's weighted return ranks among all of them
+  const ranks = rankTo99(rows.filter((r) => r.rsRaw != null).map((r) => [r.s, r.rsRaw]));
+  for (const r of rows) {
+    r.rs = ranks.get(r.s) ?? null;
+    delete r.rsRaw;
   }
   // SEBI/AMFI convention: top 100 by market cap are large caps, the next 150 mid caps
   [...rows].sort((a, b) => (b.mcap ?? 0) - (a.mcap ?? 0)).forEach((r, i) => {

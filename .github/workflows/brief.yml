@@ -80,6 +80,7 @@ jobs:
       - name: Publish the app
         if: env.CLOUDFLARE_API_TOKEN != ''
         run: |
+          node scripts/backtest.mjs > /dev/null   # preset comparison for the Backtest tab
           npm run build
           npx wrangler pages deploy dist --project-name nse-screener --branch main --commit-dirty=true
       - name: Keep the generated app data

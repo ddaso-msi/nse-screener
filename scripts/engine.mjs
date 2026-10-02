@@ -9,7 +9,7 @@
 // sessions, so a rising market doesn't flatter a screen.
 
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
-import { adjust, cachedList, fetchDays, loadHistory } from './sync.mjs';
+import { adjust, cachedList, fetchDays, loadHistory, rankTo99, rsScore } from './sync.mjs';
 
 export const DEFAULT_LOOKBACK = 1100; // calendar days, ~3 years
 const BASELINE_MIN_TURNOVER = 1; // ₹ Cr, same floor the preset screens use
@@ -17,7 +17,7 @@ const MIN_BARS = 30;
 
 const METRICS = [
   'close', 'chg', 'w1', 'm1', 'm3', 'm6', 'y1', 'fromHi', 'fromLo',
-  'vs20', 'vs50', 'vs200', 'rsi', 'volX', 'deliv', 'avgTurnover',
+  'vs20', 'vs50', 'vs200', 'rsi', 'volX', 'deliv', 'avgTurnover', 'rs',
   'mcap', 'pe', 'epsG', 'divY',
 ];
 const COMPUTED = METRICS.slice(0, -4); // the last four come from fundamentalSeries()
@@ -100,6 +100,8 @@ function columns(bars) {
     m.chg[t] = ret(t, 1);
     m.w1[t] = ret(t, 5); m.m1[t] = ret(t, 21); m.m3[t] = ret(t, 63);
     m.m6[t] = ret(t, 126); m.y1[t] = ret(t, 252);
+    const raw = rsScore(m.m3[t], m.m6[t], ret(t, 189), m.y1[t]);
+    if (raw != null) m.rs[t] = raw; // ranked across stocks in loadUniverse()
     m.fromHi[t] = pct(c[t], hi); m.fromLo[t] = pct(c[t], lo);
     m.vs20[t] = pct(c[t], sma(20, t)); m.vs50[t] = pct(c[t], s50); m.vs200[t] = pct(c[t], s200);
     if (bars[t].deliv != null) m.deliv[t] = bars[t].deliv;
@@ -151,6 +153,18 @@ export async function loadUniverse({ log = () => {}, lookback = DEFAULT_LOOKBACK
       c: Float64Array.from(bars, (b) => b.c),
       ...cols,
     });
+  }
+  // relative strength: rank each session's raw scores across all stocks, 1-99
+  const byDate = new Map();
+  symbols.forEach((sym, si) => {
+    for (let t = 0; t < sym.n; t++) {
+      const raw = sym.m.rs[t];
+      if (Number.isNaN(raw)) continue;
+      (byDate.get(sym.date[t]) ?? byDate.set(sym.date[t], []).get(sym.date[t])).push([si * 4096 + t, raw]);
+    }
+  });
+  for (const items of byDate.values()) {
+    for (const [code, rank] of rankTo99(items)) symbols[Math.floor(code / 4096)].m.rs[code % 4096] = rank;
   }
   return { dates, symbols, base: new Map() };
 }

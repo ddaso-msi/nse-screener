@@ -61,6 +61,8 @@ All from the NSE archive, one set of files per trading session, cached in `data/
 ## How the numbers are built
 
 - **Price adjustment**: earlier prices are scaled at each official split, bonus, rights issue and demerger. Splits and bonuses use the announced ratio and are only applied where the opening gap confirms them, on the stated ex-date or within five sessions (ex-dates get revised). Demergers carry no ratio, so the opening gap is used. A stock that opens more than 23% down with no official action on record is still adjusted and marked "inferred". Dividends are not adjusted.
+- **Relative strength (RS)** = each stock's weighted return (40% last 3 months, 20% each for 6, 9 and 12 months) ranked 1–99 across all stocks; needs six months of history.
+- **Market section of the brief**: breadth and leadership across stocks with ₹1 Cr+ daily turnover, using the median stock in each size group and sector (not index levels).
 - **EPS** = price / P/E. **Earnings growth** = trailing earnings (market cap / P/E) versus 252 sessions earlier. **Dividend yield** = dividends with an ex-date in the last 12 months / price.
 - **Large / mid / small cap** = market-cap rank 1–100 / 101–250 / the rest.
 

@@ -67,6 +67,31 @@
     ]
   },
   {
+    "id": "rs",
+    "label": "Relative-strength leaders",
+    "blurb": "Outperformed 90% of stocks over the past year (recent months weighted more) and above the 200 DMA.",
+    "filters": {
+      "ranges": {
+        "rs": [
+          90,
+          null
+        ],
+        "vs200": [
+          0,
+          null
+        ],
+        "avgTurnover": [
+          5,
+          null
+        ]
+      }
+    },
+    "sort": [
+      "rs",
+      -1
+    ]
+  },
+  {
     "id": "volume",
     "label": "Volume shockers",
     "blurb": "Traded at least 3× their 20-day average volume.",

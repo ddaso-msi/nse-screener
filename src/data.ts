@@ -36,6 +36,8 @@ export interface Row {
   sessions: number;
   spark: number[];
   ca: number;
+  /** Relative strength: 1-99 rank of weighted 3/6/9/12-month return across all stocks */
+  rs: number | null;
   /** Market cap, ₹ Cr */
   mcap: number | null;
   pe: number | null;
@@ -73,7 +75,7 @@ export type NumKey =
   | 'close' | 'chg' | 'w1' | 'm1' | 'm3' | 'm6' | 'y1'
   | 'fromHi' | 'fromLo' | 'vs20' | 'vs50' | 'vs200'
   | 'rsi' | 'volX' | 'deliv' | 'avgTurnover' | 'turnover'
-  | 'mcap' | 'pe' | 'epsG' | 'divY';
+  | 'mcap' | 'pe' | 'epsG' | 'divY' | 'rs';
 
 export type Flag = 'newHi' | 'newLo' | 'golden' | 'death';
 
@@ -164,6 +166,7 @@ export const FIELD_GROUPS: { title: string; fields: FieldDef[] }[] = [
   {
     title: 'Momentum & volume',
     fields: [
+      { key: 'rs', label: 'Relative strength', unit: '', hint: '1–99: the share of stocks this one has outperformed over the past year, recent months weighted more' },
       { key: 'rsi', label: 'RSI (14)', unit: '' },
       { key: 'volX', label: 'Volume vs 20D avg', unit: '×' },
       { key: 'deliv', label: 'Delivery', unit: '%', hint: 'Share of traded quantity taken for delivery' },
@@ -276,7 +279,7 @@ export function toCsv(rows: Row[]) {
     ['Symbol', 's'], ['Company', 'name'], ['Sector', 'sector'], ['Index', 'idx'], ['Close', 'close'],
     ['Day %', 'chg'], ['1W %', 'w1'], ['1M %', 'm1'], ['3M %', 'm3'], ['6M %', 'm6'], ['1Y %', 'y1'],
     ['Market Cap Cr', 'mcap'], ['P/E', 'pe'], ['EPS', 'eps'], ['Earnings Growth 1Y %', 'epsG'], ['Dividend Yield %', 'divY'],
-    ['RSI 14', 'rsi'], ['vs 20DMA %', 'vs20'], ['vs 50DMA %', 'vs50'], ['vs 200DMA %', 'vs200'],
+    ['Relative Strength', 'rs'], ['RSI 14', 'rsi'], ['vs 20DMA %', 'vs20'], ['vs 50DMA %', 'vs50'], ['vs 200DMA %', 'vs200'],
     ['52W High', 'hi52'], ['52W Low', 'lo52'], ['From 52W High %', 'fromHi'], ['Volume', 'vol'],
     ['Volume x 20D avg', 'volX'], ['Delivery %', 'deliv'], ['Avg Turnover Cr', 'avgTurnover'],
   ];

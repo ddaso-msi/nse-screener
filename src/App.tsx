@@ -35,6 +35,7 @@ const COLUMNS: { key: keyof Row; label: string; title?: string; cell: (r: Row) =
   { key: 'm3', label: '3M', cell: (r) => pctCell(r.m3) },
   { key: 'm6', label: '6M', cell: (r) => pctCell(r.m6) },
   { key: 'y1', label: '1Y', cell: (r) => pctCell(r.y1) },
+  { key: 'rs', label: 'RS', title: 'Relative strength, 1–99: share of stocks outperformed over the past year', cell: (r) => (r.rs == null ? '–' : r.rs) },
   { key: 'mcap', label: 'M.Cap', title: 'Market capitalisation, ₹ crore', cell: (r) => fmtMcap(r.mcap) },
   { key: 'pe', label: 'P/E', title: 'NSE trailing P/E', cell: (r) => (r.pe == null ? '–' : r.pe.toFixed(1)) },
   { key: 'rsi', label: 'RSI', title: '14-session RSI', cell: (r) => (r.rsi == null ? '–' : r.rsi.toFixed(0)) },
