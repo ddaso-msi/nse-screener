@@ -5,7 +5,7 @@ pages_build_output_dir = "dist"
 # Watchlist and brief screens. The id is filled in by `wrangler kv namespace create USER`.
 [[kv_namespaces]]
 binding = "USER"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "3e3d5c98f10544e8ab0c69e4eff9aba4"
 
 # APP_PASSWORD is a secret, never a var: `wrangler pages secret put APP_PASSWORD`.
 # Local `wrangler pages dev` reads it from .dev.vars (gitignored).
