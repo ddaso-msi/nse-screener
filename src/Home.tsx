@@ -8,6 +8,7 @@ const PLACES = [
   ['etfs', 'ETFs', 'Funds to trade or hold'],
   ['chart', 'Chart', 'Candles, indicators, drawings'],
   ['paper', 'Paper', 'Practise with virtual money'],
+  ['journal', 'Journal', 'Record your real trades'],
   ['options', 'Options', 'Chains and payoffs'],
   ['news', 'News', 'Headlines and filings'],
   ['backtest', 'Backtest', 'Test a rule on history'],

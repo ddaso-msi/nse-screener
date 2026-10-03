@@ -82,5 +82,21 @@ export const usePaper = () => useUserFile<Paper>('paper', NEW_PAPER);
 export interface Drawing { id: number; type: 'h' | 't'; d1: number; p1: number; d2?: number; p2?: number }
 export const useDrawings = () => useUserFile<Record<string, Drawing[]>>('drawings', {});
 
+/** A real trade you took, written down by hand. Dates are YYYYMMDD. */
+export interface JournalTrade {
+  id: number; s: string; qty: number; entry: number; entryDate: number;
+  /** The stop when the trade was taken; R is measured against this even if the stop is moved later */
+  stop0: number | null;
+  stop: number | null; target: number | null;
+  setup: string; reason: string;
+  exit?: number; exitDate?: number;
+  /** Brokerage and taxes for the whole trade, in rupees */
+  fees?: number;
+  lesson?: string;
+}
+export interface Journal { capital: number | null; riskPct: number; trades: JournalTrade[] }
+export const NEW_JOURNAL: Journal = { capital: null, riskPct: 1, trades: [] };
+export const useJournal = () => useUserFile<Journal>('journal', NEW_JOURNAL);
+
 export const useWatchlist = () => useUserFile<Watchlist>('watchlist', {});
 export const useBriefScreens = () => useUserFile<BriefScreen[]>('screens', []);

@@ -18,10 +18,10 @@ function syncApi(): Plugin {
       // the folder directly instead.
       server.middlewares.use('/data', async (req, res, next) => {
         const rel = decodeURIComponent((req.url ?? '').split('?')[0]);
-        if (!/^\/[\w/-]+\.json$/.test(rel)) return next();
+        if (!/^\/[\w/-]+\.(json|bin)$/.test(rel)) return next();
         try {
           const body = await readFile(path.join(DATA_DIR, rel));
-          res.setHeader('content-type', 'application/json');
+          res.setHeader('content-type', rel.endsWith('.bin') ? 'application/octet-stream' : 'application/json');
           res.setHeader('cache-control', 'no-cache');
           res.end(body);
         } catch {
@@ -67,7 +67,7 @@ function syncApi(): Plugin {
       // nightly job can read them (browser storage would be invisible to it).
       server.middlewares.use('/api/user', async (req, res) => {
         const name = (req.url ?? '').split('?')[0].slice(1);
-        if (name !== 'watchlist' && name !== 'screens' && name !== 'paper' && name !== 'drawings') {
+        if (name !== 'watchlist' && name !== 'screens' && name !== 'paper' && name !== 'drawings' && name !== 'journal') {
           res.statusCode = 404;
           return res.end();
         }

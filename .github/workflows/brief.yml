@@ -15,6 +15,7 @@ on:
 
 permissions:
   contents: write
+  issues: write
 
 concurrency:
   group: brief
@@ -77,13 +78,36 @@ jobs:
             git pull -q --rebase
             git push -q
           fi
+      - name: Check the data is fresh
+        # A run can "succeed" while finding nothing new (NSE renames a file, a feed
+        # changes shape). More than five days without a new session is not a holiday.
+        run: |
+          node -e "
+            const asOf = String(require('./public/data/brief.json').asOf);
+            const then = Date.UTC(+asOf.slice(0, 4), +asOf.slice(4, 6) - 1, +asOf.slice(6, 8));
+            const days = Math.floor((Date.now() + 5.5 * 36e5 - then) / 864e5);
+            console.log('Latest session ' + asOf + ', ' + days + ' day(s) ago');
+            if (days > 5) { console.error('No new NSE session for ' + days + ' days.'); process.exit(1); }
+          "
       - name: Publish the app
         if: env.CLOUDFLARE_API_TOKEN != ''
         run: |
           node scripts/backtest.mjs > /dev/null   # preset comparison for the Backtest tab
+          node scripts/pack.mjs > /dev/null       # history for in-browser custom backtests
           npm run build
           npx wrangler pages deploy dist --project-name nse-screener --branch main --commit-dirty=true
+      - name: Raise an issue if the update failed
+        if: failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Evening update failed"
+          if [ -z "$(gh issue list --repo "$GITHUB_REPOSITORY" --state open --search "$title in:title" --json number --jq '.[0].number')" ]; then
+            gh issue create --repo "$GITHUB_REPOSITORY" --title "$title" \
+              --body "The evening update did not finish, so the site is showing older data. Run: $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
       - name: Keep the generated app data
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: app-data

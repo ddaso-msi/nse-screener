@@ -5,7 +5,7 @@ import { Explain } from './Help';
 import type { Term } from './glossary';
 import { Delta } from './ui';
 import { PAPER_FEE, type Paper, type WatchItem } from './user';
-import { BUILD_LABEL, CAP_LABEL, IDX_LABEL, PATTERN_LABEL, fmtMcap, fileSafe, fmtCr, fmtDate, fmtPct, fmtPrice, fmtQty, type History, type Row } from './data';
+import { BUILD_LABEL, CAP_LABEL, IDX_LABEL, PATTERN_LABEL, fmtMcap, fileSafe, fmtCr, fmtDate, fmtInt, fmtPct, fmtPrice, fmtQty, monthOf, type History, type Row } from './data';
 
 const tone = (v: number | null) => (v == null || v === 0 ? '' : v > 0 ? 'up' : 'down');
 
@@ -23,11 +23,60 @@ function Stat({ label, value, cls = '', term }: { label: string; value: string; 
   );
 }
 
-export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEditWatch, floating = false, paper, onSavePaper, asOf, rowOf }: {
+const quarterName = (q: number) => `${monthOf(q)} ${Math.floor(q / 10000)}`;
+const growth = (now: number, then: number | undefined) => (then != null && then > 0 ? (now / then - 1) * 100 : null);
+
+/** Quarterly results from the company's filings: the headline ratios and the last six quarters. */
+function Results({ row, fin }: { row: Row; fin: NonNullable<History['fin']> }) {
+  const byQ = new Map(fin.q.map((x) => [x.q, x]));
+  const shown = fin.q.slice(-6).reverse();
+  const latest = fin.q[fin.q.length - 1];
+  const lender = fin.kind !== 'N';
+  return (
+    <>
+      <h3>Quarterly results</h3>
+      <div className="stats">
+        <Stat label="Sales growth (YoY)" value={fmtPct(row.revYoY)} cls={tone(row.revYoY)} />
+        <Stat label="Profit growth (YoY)" value={fmtPct(row.patYoY)} cls={tone(row.patYoY)} />
+        <Stat term="roe" label="Return on equity" value={row.roe == null ? '–' : `${row.roe.toFixed(1)}%`} />
+        {!lender && <Stat term="opm" label="Operating margin" value={row.opm == null ? '–' : `${row.opm.toFixed(1)}%`} />}
+        {!lender && <Stat term="de" label="Debt to equity" value={row.de == null ? '–' : row.de.toFixed(2)} />}
+      </div>
+      <div className="table-wrap results">
+        <table className="static">
+          <thead><tr><th className="left">Quarter to</th><th>{lender ? 'Income' : 'Sales'} ₹ Cr</th><th>Profit ₹ Cr</th>{!lender && <th>Margin</th>}</tr></thead>
+          <tbody>
+            {shown.map((x) => {
+              const then = byQ.get(x.q - 10000);
+              const rev = growth(x.rev, then?.rev), pat = growth(x.pat, then?.pat);
+              return (
+                <tr key={x.q}>
+                  <td className="left">{quarterName(x.q)}</td>
+                  <td>{fmtInt(x.rev)}{rev != null && <small className={tone(rev)}>{fmtPct(rev, 0)}</small>}</td>
+                  <td className={x.pat < 0 ? 'down' : ''}>{fmtInt(x.pat)}{pat != null && <small className={tone(pat)}>{fmtPct(pat, 0)}</small>}</td>
+                  {!lender && <td>{x.op != null && x.rev > 0 ? `${((x.op / x.rev) * 100).toFixed(1)}%` : '–'}</td>}
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+      <p className="note">
+        {fin.cons ? 'Consolidated' : 'Standalone'} figures from the company's filings to NSE; the small percentages compare with the same quarter a year earlier.
+        The latest, for the quarter to {fmtDate(latest.q)}, was filed on {fmtDate(latest.at)}.
+        {fin.kind === 'B' && ' For a bank, income is interest plus other income; operating margin and debt to equity do not apply.'}
+        {fin.kind === 'F' && ' For a lender, operating margin and debt to equity do not apply.'}
+      </p>
+    </>
+  );
+}
+
+export function Detail({ row, onClose, onOpenChart, onLogTrade, watch, onToggleWatch, onEditWatch, floating = false, paper, onSavePaper, asOf, rowOf }: {
   row: Row;
   /** Shown as an overlay drawer instead of a docked column */
   floating?: boolean;
   onOpenChart: () => void;
+  onLogTrade: () => void;
   onClose: () => void;
   watch: WatchItem | null;
   onToggleWatch: () => void;
@@ -136,7 +185,10 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
         ) : pending ? (
           <p>Paper order: buy <b>{pending.qty} shares</b> at the next open{pending.stop ? ` · stop ₹${fmtPrice(pending.stop)}` : ''}. <button className="link" onClick={() => onSavePaper((p) => ({ ...p, orders: p.orders.filter((o) => o !== pending) }))}>Cancel</button></p>
         ) : !ticket ? (
-          <button onClick={() => setTicket(true)}>Paper trade this stock</button>
+          <div className="acct-row">
+            <button onClick={() => setTicket(true)}>Paper trade this stock</button>
+            <button className="plain" onClick={onLogTrade} title="Record a real trade you took in this stock">Add to journal</button>
+          </div>
         ) : (
           <div className="ticket">
             <label>Stop-loss ₹<NumInput label="Stop-loss price" placeholder="none" value={stop} onChange={(v) => { setStop(v); setQtyEdit(null); }} /></label>
@@ -223,6 +275,8 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
         <Stat label="Dividend yield" value={row.divY == null ? '–' : `${row.divY.toFixed(2)}%`} />
         <Stat label="Next ex-date" value={row.nextEx ? fmtDate(row.nextEx.ex) : 'None announced'} />
       </div>
+
+      {!row.etf && hist?.fin && <Results row={row} fin={hist.fin} />}
 
       {row.fo === 1 && (
         <>

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AccountPanel, type Me } from './Account';
 import { Backtest } from './Backtest';
 import { Brief } from './Brief';
 import { APP_NAME } from './brand';
@@ -9,12 +10,13 @@ import type { Term } from './glossary';
 import { News } from './News';
 import { Options } from './Options';
 import { PaperTab } from './Paper';
+import { JournalTab } from './Journal';
 import { advancePaper } from './paperEngine';
 import { Detail } from './Detail';
 import { Etfs } from './Etfs';
 import { NumInput } from './NumInput';
 import { Delta, Icon, Meter, RangeBar, Spark, StockSearch, tone, useTheme } from './ui';
-import { useBriefScreens, useDrawings, usePaper, useWatchlist } from './user';
+import { useBriefScreens, useDrawings, useJournal, usePaper, useWatchlist } from './user';
 import {
   BUILD_LABEL, EMPTY, PATTERN_LABEL, FIELD_GROUPS, FLAGS, IDX_LABEL, PRESETS, UNIVERSES,
   HOSTED, applyFilters, describeRange, fmtCr, fmtMcap, fmtDate, fmtPct, fmtPrice, sortRows, toCsv,
@@ -25,6 +27,7 @@ type Sort = [keyof Row, 1 | -1];
 interface Saved { name: string; filters: Filters; sort: Sort }
 
 const PAGE = 100;
+const STALE_AFTER = 5; // days without a new session before the app says so (covers a long weekend)
 const SAVED_KEY = 'nse-screener.saved';
 
 const loadSaved = (): Saved[] => {
@@ -84,7 +87,7 @@ export default function App() {
   const [shown, setShown] = useState(PAGE);
   const [selected, setSelected] = useState<string | null>(null);
   const [saved, setSaved] = useState<Saved[]>(loadSaved);
-  const [view, setView] = useState<'home' | 'brief' | 'screener' | 'etfs' | 'chart' | 'paper' | 'options' | 'news' | 'backtest'>('home');
+  const [view, setView] = useState<'home' | 'brief' | 'screener' | 'etfs' | 'chart' | 'paper' | 'journal' | 'options' | 'news' | 'backtest'>('home');
   const [chartSymbol, setChartSymbol] = useState<string | null>(null);
   // help: opens by itself the first time someone visits on this device
   const [help, setHelp] = useState<'welcome' | 'glossary' | null>(() => {
@@ -99,18 +102,16 @@ export default function App() {
     try { localStorage.setItem('nse-screener.welcomed', '1'); } catch { /* private mode */ }
   }, []);
   const [drawings, saveDrawings] = useDrawings();
+  const [journal, saveJournal] = useJournal();
+  const [journalSymbol, setJournalSymbol] = useState<string | null>(null);
   const [paper, savePaper, paperLoaded, reloadPaper] = usePaper();
   // who is signed in (hosted site only; the local app has a single user)
-  const [me, setMe] = useState<{ name: string; admin: boolean } | null>(null);
+  const [me, setMe] = useState<Me | null>(null);
+  const [accountOpen, setAccountOpen] = useState(false);
   useEffect(() => {
     if (!HOSTED) return; // the local app has no sign-in
     fetch('/api/auth/me').then((r) => (r.ok ? r.json() : null)).then((u) => u?.name && setMe(u)).catch(() => {});
   }, []);
-  const signOut = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-    for (const k of ['watchlist', 'paper', 'drawings']) localStorage.removeItem(`nse-screener.${k}`);
-    location.reload();
-  };
   const [watchlist, saveWatchlist] = useWatchlist();
   const [briefScreens, saveBriefScreens] = useBriefScreens();
   const [watchOnly, setWatchOnly] = useState(false);
@@ -274,6 +275,10 @@ export default function App() {
   };
 
   const criteria = Object.keys(filters.ranges).length + filters.flags.length;
+  // days since the latest session, counted in India time
+  const staleDays = data
+    ? Math.floor((Date.now() + 5.5 * 36e5 - Date.UTC(Math.floor(data.asOf / 10000), (Math.floor(data.asOf / 100) % 100) - 1, data.asOf % 100)) / 864e5)
+    : 0;
   const activePreset = PRESETS.find((p) => p.id === preset);
 
   if (loadError && !data) {
@@ -292,6 +297,12 @@ export default function App() {
 
   return (
     <div className={`app view-${view} ${selectedRow && view === 'screener' ? 'with-detail' : ''} ${filtersOpen ? 'filters-open' : ''}`}>
+      {view !== 'home' && staleDays >= STALE_AFTER && (
+        <p className="stale-banner" role="status">
+          Prices are from {fmtDate(data.asOf)}, {staleDays} days ago. The evening update may not have run{HOSTED ? '.' : '; click Refresh to fetch the latest.'}
+        </p>
+      )}
+      {accountOpen && me && <AccountPanel me={me} onClose={() => setAccountOpen(false)} />}
       {help && <HelpPanel start={help} onClose={closeHelp} onOpenBrief={() => setView('brief')} />}
 
       {view === 'home' && <Home onHelp={() => setHelp('welcome')} data={data} searchRows={everything} onGo={setView} onPick={openStock} theme={theme} onTheme={nextTheme} />}
@@ -304,7 +315,7 @@ export default function App() {
           <h1>{APP_NAME}</h1>
         </button>
         <nav className="tabs" role="tablist" aria-label="Sections">
-          {([['brief', 'Brief'], ['screener', 'Screener'], ['etfs', 'ETFs'], ['chart', 'Chart'], ['paper', 'Paper'], ['options', 'Options'], ['news', 'News'], ['backtest', 'Backtest']] as const).map(([id, label]) => (
+          {([['brief', 'Brief'], ['screener', 'Screener'], ['etfs', 'ETFs'], ['chart', 'Chart'], ['paper', 'Paper'], ['journal', 'Journal'], ['options', 'Options'], ['news', 'News'], ['backtest', 'Backtest']] as const).map(([id, label]) => (
             <button key={id} role="tab" aria-selected={view === id} className={view === id ? 'on' : ''} onClick={() => setView(id)}>
               <Icon name={id} />
               {label}
@@ -314,7 +325,7 @@ export default function App() {
         <StockSearch rows={everything} onPick={openStock} />
         <div className="top-right">
           {syncMsg && <span className="muted">{syncMsg}</span>}
-          <span className="asof" title={`${data.rows.length.toLocaleString('en-IN')} stocks · end-of-day data`}>
+          <span className={`asof ${staleDays >= STALE_AFTER ? 'stale' : ''}`} title={staleDays >= STALE_AFTER ? `These prices are ${staleDays} days old. The evening update may not have run.` : `${data.rows.length.toLocaleString('en-IN')} stocks · end-of-day data`}>
             <i />
             {fmtDate(data.asOf)} close
           </span>
@@ -325,8 +336,9 @@ export default function App() {
             </button>
           )}
           {me && (
-            <button className="ghost" onClick={signOut} title={`Signed in as ${me.name}. Click to sign out.`}>
-              {me.name} · Sign out
+            <button className="ghost account-chip" onClick={() => setAccountOpen(true)} title="Your account: password, devices, your data">
+              <span className="avatar" aria-hidden>{me.name[0].toUpperCase()}</span>
+              {me.name}
             </button>
           )}
           <button className="ghost square" onClick={() => setHelp('welcome')} aria-label="Help" title="How Sensa works, and what the terms mean">?</button>
@@ -372,6 +384,8 @@ export default function App() {
       )}
 
       {view === 'paper' && <PaperTab paper={paper} onSave={savePaper} onReload={reloadPaper} rowOf={rowOf} asOf={data.asOf} onOpenStock={openStock} onGoScreener={() => setView('screener')} />}
+
+      {view === 'journal' && <JournalTab journal={journal} onSave={saveJournal} rowOf={rowOf} asOf={data.asOf} onOpenStock={openStock} prefill={journalSymbol} />}
 
       {view === 'options' && <Options key={briefKey} />}
 
@@ -616,6 +630,7 @@ export default function App() {
       {selectedRow && view !== 'chart' && (
         <Detail
           onOpenChart={() => openChart(selectedRow.s)}
+          onLogTrade={() => { setJournalSymbol(selectedRow.s); closeDetail(); setView('journal'); }}
           key={view === 'screener' ? 'docked' : 'floating'}
           floating={view !== 'screener'}
           row={selectedRow}

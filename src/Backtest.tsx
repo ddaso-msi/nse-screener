@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NumInput } from './NumInput';
 import { Explain } from './Help';
+import { runClientBacktest, sizeFor } from './backtestClient';
 import { HOSTED, describeFilters, fmtDate, fmtPct, type Filters } from './data';
 
 interface Stats {
@@ -58,6 +59,11 @@ function Custom({ filters, onOpenFilters }: { filters: Filters; onOpenFilters: (
   const [cost, setCost] = useState<number | null>(0.3);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [size, setSize] = useState<number | null>(null);
+  const exits = stop != null || target != null;
+  useEffect(() => {
+    if (IN_BROWSER) sizeFor(filters, exits).then(setSize);
+  }, [filters, exits, runs.length]);
 
   const criteria = describeFilters({ ...filters, q: '' });
   const testable = filters.flags.length + Object.keys(filters.ranges).length > 0;
@@ -73,13 +79,16 @@ function Custom({ filters, onOpenFilters }: { filters: Filters; onOpenFilters: (
     setError(null);
     const params = { hold: hold ?? 10, stop, target, cost: cost ?? 0 };
     try {
-      const res = await fetch('/api/backtest', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ filters, ...params }),
-      });
-      const body = await res.json().catch(() => null);
-      if (!res.ok || !body) throw new Error(body?.error ?? 'Custom backtests need the dev server (npm run dev).');
+      let body: { stats: Stats | null };
+      if (IN_BROWSER) {
+        // hosted: the same engine, run here on history downloaded from the site
+        body = (await runClientBacktest({ filters, ...params })) as { stats: Stats | null };
+      } else {
+        const res = await fetch('/api/backtest', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ filters, ...params }) });
+        const json = await res.json().catch(() => null);
+        if (!res.ok || !json) throw new Error(json?.error ?? 'Custom backtests need the dev server (npm run dev).');
+        body = json;
+      }
       save([{ id: Date.now(), filters: { ...filters, q: '' }, ...params, stats: body.stats }, ...runs].slice(0, 30));
     } catch (e) {
       setError((e as Error).message);
@@ -120,12 +129,13 @@ function Custom({ filters, onOpenFilters }: { filters: Filters; onOpenFilters: (
           <span className="lbl">Costs per trade</span>
           <span className="unit"><NumInput label="Round-trip costs percent" placeholder="0" value={cost} onChange={setCost} /> %</span>
         </label>
-        <button className="primary" onClick={go} disabled={!testable || busy || HOSTED}>
+        <button className="primary" onClick={go} disabled={!testable || busy}>
           {busy ? 'Running…' : 'Run backtest'}
         </button>
       </div>
-      {HOSTED && <p className="note">Custom backtests need three years of price history in memory, so they only run on your Mac (npm run dev). Earlier runs are listed below.</p>}
+      {IN_BROWSER && testable && size != null && size > 0 && <p className="note">Running this downloads about {size} MB of price history to your device (once a day; less on later runs).</p>}
       {busy && runs.length === 0 && <p className="note">The first run loads three years of history and takes a few seconds.</p>}
+      {(['revYoY', 'patYoY', 'opm', 'roe', 'de'] as const).some((k) => filters.ranges[k]) && <p className="note">This screen uses figures from quarterly results. Those go back to early 2024, and growth and return on equity need a year of them first, so the test covers roughly the last 18 months rather than three years.</p>}
       {noFloor && <p className="note">This screen has no minimum turnover, so it includes illiquid stocks you may not be able to trade at these prices.</p>}
       {error && <p className="note down">{error}</p>}
 
@@ -198,6 +208,10 @@ interface Result {
   horizons: number[];
   setups: { id: string; label: string; blurb: string; h: Record<string, Stats | null> }[];
 }
+
+// The hosted site has no server to run backtests on, so they run in the browser.
+// Add ?clientbt to the local app's address to try that path there.
+const IN_BROWSER = HOSTED || new URLSearchParams(location.search).has('clientbt');
 
 const MIN_SIGNALS = 200;
 

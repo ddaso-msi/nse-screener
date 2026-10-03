@@ -72,7 +72,7 @@ const STEPS: { title: string; body: string; icon: Parameters<typeof Icon>[0]['na
   },
   {
     title: 'Practise before you trade',
-    body: "Paper trading gives you ₹10 lakh of virtual money. Open a stock, press \"Paper trade this stock\", set a stop, and the order fills at the next day's opening price.",
+    body: "Paper trading gives you ₹10 lakh of virtual money. Open a stock, press \"Paper trade this stock\", set a stop, and the order fills at the next day's opening price. When you trade for real, the Journal sizes the position and keeps a record you can review.",
     icon: 'paper',
   },
   {

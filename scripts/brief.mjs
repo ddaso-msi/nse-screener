@@ -27,13 +27,14 @@ export const DEFAULT_SCREENS = JSON.parse(
   await readFile(path.join(ROOT, 'scripts/default-screens.json'), 'utf8'),
 );
 
-const FILES = { watchlist: 'watchlist.json', screens: 'screens.json', log: 'log.json', paper: 'paper.json', drawings: 'drawings.json' };
+const FILES = { watchlist: 'watchlist.json', screens: 'screens.json', log: 'log.json', paper: 'paper.json', drawings: 'drawings.json', journal: 'journal.json' };
 export const PAPER_START = 1000000;
 const DEFAULTS = {
   watchlist: {},
   screens: DEFAULT_SCREENS,
   log: [],
   drawings: {},
+  journal: { capital: null, riskPct: 1, trades: [] },
   paper: { start: PAPER_START, cash: PAPER_START, orders: [], positions: [], closed: [], equity: [], notices: [], last: null },
 };
 

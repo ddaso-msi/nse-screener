@@ -31,9 +31,11 @@ scripts/schedule.sh uninstall
 - **Nightly run**: `.github/workflows/brief.yml` builds the brief on GitHub Actions on weekdays at 19:30 and 22:00 IST, commits `data/user`, and publishes the app to Cloudflare Pages. Downloaded NSE files live in the Actions cache. The repo is the master copy of the forward log, so `git pull` before running the brief locally.
 - **Hosted app**: Cloudflare Pages project `nse-screener`. Everything on it (pages, data, API) needs a signed-in account.
 - **Accounts** (`server/auth.js`, `functions/`): people create their own account with a name, a password and the invite code, which is the `APP_PASSWORD` secret. Passwords are stored as PBKDF2 hashes in the `USER` KV namespace; a session is a signed cookie lasting 30 days. The first account created is the owner. Sign-in is limited to 10 tries per name per 15 minutes.
-- **Per-user data**: each account has its own watchlist, paper account and chart drawings (`u:<name>:…` in KV). Watchlist alerts and paper-trade fills are worked out in the browser from the published data files, so the nightly job handles no per-user data. The list of screens the brief follows is shared, and only the owner can change it.
+- **Per-user data**: each account has its own watchlist, paper account, trade journal and chart drawings (`u:<name>:…` in KV). Watchlist alerts and paper-trade fills are worked out in the browser from the published data files, so the nightly job handles no per-user data. The list of screens the brief follows is shared, and only the owner can change it.
+- **Account panel** (click your name in the header): change password, sign out other devices, download your data, delete your account. A session cookie carries the account's version number; changing the password or signing out other devices bumps it, which invalidates older cookies. The owner's account can't be deleted from the app.
 - **Removing someone / a forgotten password**: delete their account key and they can sign up again with the same name, keeping their data: `npx wrangler kv key delete "acct:<name>" --binding USER --remote`. Changing `APP_PASSWORD` changes the invite code for new sign-ups only.
-- **Not available hosted**: Refresh data, Update brief and custom backtests; they need the local dev server.
+- **Not available hosted**: Refresh data and Update brief; they need the local dev server.
+- **When something goes wrong**: the app shows an amber banner once prices are five or more days old. The workflow fails if it finds no new session for more than five days, and any failed run opens a GitHub issue titled "Evening update failed" (one at a time).
 - **Secrets**: `APP_PASSWORD` on the Pages project; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the GitHub repo. Until the GitHub secrets exist the workflow skips publishing.
 - **Local test of the hosted build**: `npm run build && npx wrangler pages dev dist --kv USER` with `APP_PASSWORD` in `.dev.vars`. The local dev app (`npm run dev`) has no sign-in and a single user, stored in `data/user/`.
 
@@ -59,6 +61,10 @@ Drawing tools are a horizontal level and a trendline, stored per stock in `data/
 
 A practice account with ₹10,00,000 of virtual money (`data/user/paper.json`; the `paper` key in KV when hosted). Orders are placed from a stock's panel, sized by the share of the account you are willing to lose at the stop. `advancePaper()` in `src/paperEngine.ts` runs in the browser whenever newer data is loaded: orders fill at the next session's open, stops and targets are checked against each day's range (stop first if both are touched; a gap fills at the open), 0.15% is charged per side, and positions are restated after a split or bonus.
 
+## Trade journal
+
+A hand-written record of real trades (`src/Journal.tsx`; `data/user/journal.json`, the `journal` key in KV when hosted). You enter your trading capital and the share of it you will risk per trade; the form then suggests the number of shares from the price and the stop. Open trades are valued at the latest close; closing a trade records the sale price, charges and what you learned. Results are shown in rupees and in R (profit divided by what the first stop put at risk), overall and by kind of trade. Long trades only. Nothing here places an order.
+
 ## Options tab
 
 An end-of-day options workspace for every F&O underlying (indices and stocks): the option chain per expiry with open interest, its change, implied volatility and settlement prices; a strategy builder with common structures or legs picked from the chain; and call/put open interest by strike.
@@ -75,7 +81,10 @@ npm run backtest   # first run downloads ~3 years of history (~235 MB in data/ra
 
 Replays the preset screens (`src/presets.json`, shared with the app) over history and writes `public/data/backtest.json`, shown in the Backtest tab. A signal is the first day a stock matches; entry is the next open, exit the close 5/10/20 sessions after the signal; results are compared with the average of all stocks with ₹1 Cr+ turnover over the same dates. No costs or slippage, and only currently listed companies are tested (survivorship bias).
 
-**Custom screens.** In the app, set criteria in the Screener, click "Backtest this screen", and choose a holding period, optional stop-loss and profit target, and round-trip costs. This runs through the dev server (`/api/backtest`), which keeps the history in memory after the first run; runs are kept in the browser for side-by-side comparison. The trade model lives in `scripts/engine.mjs`.
+**Custom screens.** In the app, set criteria in the Screener, click "Backtest this screen", and choose a holding period, optional stop-loss and profit target, and round-trip costs. Runs are kept in the browser for side-by-side comparison. The trade model lives in `scripts/engine-core.mjs`, which has no Node dependencies and so runs in two places with identical results:
+
+- **Local app**: through the dev server (`/api/backtest`), which keeps the history in memory after the first run.
+- **Hosted site**: in the browser (`src/backtestClient.ts`). `npm run pack` (run nightly by the workflow) writes three years of prices and indicators to `public/data/bt` as flat 32-bit float columns, about 180 MB in all; a backtest downloads only the columns it needs (roughly 25–50 MB the first time each day). Add `?clientbt` to the local app's address to exercise this path.
 
 **Rule search.** `npm run search` tests 1,260 combinations (entry rule × trend filter × liquidity floor × holding period × exit) after 0.3% costs, picks the ones that look good before 1 Oct 2025, and re-checks only those on the year after. Output goes to the console and `public/data/search.json`.
 
@@ -87,6 +96,7 @@ All from the NSE archive, one set of files per trading session, cached in `data/
 - **Corporate actions**: `bc*.csv` inside `PRddmmyy.zip`. Splits, bonuses, rights issues, demergers and dividends with ex-dates, including ones announced up to about six sessions ahead.
 - **Market cap and issued shares**: `mcap*.csv` inside the same zip (kept for the first session of each month and the latest three).
 - **P/E**: `PE_ddmmyy.csv` (available from 2024).
+- **Quarterly results**: the structured (XBRL) results filings in the NSE archive, for quarters from March 2024. Which filings exist comes from two listings on `www.nseindia.com/api` (`integrated-filing-results` for quarters from March 2025, `corporates-financial-results` before that). `scripts/results.mjs` reads each filing once and keeps the figures it uses in `data/raw/results/parsed.json`; a run reads at most 300 new filings, two at a time with a pause (the archive blocks an address that asks for more; a block lasts roughly half an hour and also stops the price files) (`RESULTS_MAX`), newest quarters first, so a first run fills in over several nights. If the listing can't be reached the run carries on with what it has.
 - **Index membership and sector**: NSE index constituent lists. Only the ~750 Nifty Total Market stocks carry a sector.
 
 - **Derivatives**: the F&O bhavcopy (both the pre- and post-July 2024 formats), `fao_participant_oi_*.csv`, `ind_close_all_*.csv` and `fo_secban.csv`. Each session's 6 MB bhavcopy is reduced to a small summary in `data/raw/fo/` by `scripts/derivatives.mjs`.
@@ -103,12 +113,13 @@ All from the NSE archive, one set of files per trading session, cached in `data/
 - **Futures position** on F&O stocks: open interest is summed across expiries; a day counts as long build-up (price up, OI up 3%+), short build-up (price down, OI up), short covering (price up, OI down 3%+) or long unwinding (price down, OI down). Not flagged in a stock's first 20 sessions in F&O.
 - **IV** = at-the-money implied volatility (Black-Scholes, 6.5% rate) from the nearest expiry with 3+ days left; **IV rank** = share of the past year's sessions with a lower IV.
 - **Index positioning** in the Brief: put/call ratio, max pain, and the strikes with the most put OI below and call OI above the price for the nearest expiry; net index-futures positions by participant type.
+- **Sales and profit growth** compare the latest quarter with the same quarter a year earlier. **Operating margin** = (profit before tax + finance costs + depreciation − other income) / sales for the latest quarter. **Return on equity** = the last four quarters' profit attributable to shareholders / shareholders' equity on the latest balance sheet. **Debt to equity** = current plus non-current borrowings (lease liabilities excluded) / that equity. Consolidated figures are used where the company files them. Each session uses only filings public by then (one filed after 3:30 pm counts from the next session), so backtests on these fields don't look ahead. Banks and other lenders get growth and return on equity only.
 - **EPS** = price / P/E. **Earnings growth** = trailing earnings (market cap / P/E) versus 252 sessions earlier. **Dividend yield** = dividends with an ex-date in the last 12 months / price.
 - **Large / mid / small cap** = market-cap rank 1–100 / 101–250 / the rest.
 
 ## Limits
 
 - End-of-day only; no intraday or live quotes.
-- Fundamentals are limited to what NSE publishes daily: market cap, P/E and dividends. There is no balance-sheet or income-statement data (debt, ROE, margins, revenue, book value). Loss-making companies have no P/E.
+- Results-based figures start with the March 2024 quarter, so growth and return on equity exist only from about mid-2025 and backtests on them cover about 18 months. The balance sheet is filed twice a year, so debt and equity can be up to six months old. Insurers and a few companies with unusual filings have no results figures. Loss-making companies have no P/E.
 - Earnings growth is derived from two P/E readings a year apart, so it is approximate and swings wildly when the earlier earnings were near zero.
 - P/E history starts in 2024 and market-cap snapshots in Feb 2024, so backtests on fundamentals cover a shorter period than price-only ones.

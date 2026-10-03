@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import { buildOptions, derivativeSeries, fetchDerivatives, loadDerivatives } from './derivatives.mjs';
 import { fetchEtfData, loadEtfData, loadEtfList } from './etf.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
+import { fetchResults, loadResults, resultsSeries } from './results.mjs';
 import { buildNews, fetchFilings, loadFilings } from './news.mjs';
 import { detectPatterns } from './patterns.mjs';
 
@@ -405,6 +406,10 @@ export async function sync({ log = console.log } = {}) {
 
   const filings = await loadFilings(names);
 
+  log('Fetching quarterly results…');
+  await fetchResults(log, new Set(names.keys()));
+  const results = await loadResults();
+
   log('Computing metrics…');
   const { bySymbol, dates } = await loadHistory(files);
   if (!dates.length) throw new Error('No bhavcopy data could be loaded');
@@ -424,6 +429,9 @@ export async function sync({ log = console.log } = {}) {
     if (ca.length) adjusted++;
     const fs = fundamentalSeries(symbol, bars, ca, fund);
     const at = bars.length - 1;
+    const rs = resultsSeries(symbol, bars, results);
+    const res = results.get(symbol);
+    const fin = Number.isNaN(rs.opm[at]) && Number.isNaN(rs.roe[at]) && Number.isNaN(rs.revYoY[at]) ? null : res;
     const ds = derivativeSeries(symbol, bars, deriv);
     const inFo = ds.any && deriv.days.get(latest)?.stocks[symbol] != null;
     const filed = filings.get(symbol);
@@ -442,6 +450,12 @@ export async function sync({ log = console.log } = {}) {
       eps: pe ? r2(bars[at].rc / pe) : null,
       epsG: r1(fs.epsG[at]),
       divY: r2(fs.divY[at]),
+      // from quarterly results filings
+      revYoY: r1(rs.revYoY[at]),
+      patYoY: r1(rs.patYoY[at]),
+      opm: r1(rs.opm[at]),
+      roe: r1(rs.roe[at]),
+      de: r2(rs.de[at]),
       nextEx: acts.find((a) => a.ex > latest) ?? null,
       // derivatives (F&O stocks only)
       fo: inFo ? 1 : 0,
@@ -473,6 +487,8 @@ export async function sync({ log = console.log } = {}) {
         ca,
         acts,
         pat: patterns,
+        // quarterly results, ₹ Cr: revenue, profit after tax, operating profit; equity and debt where the filing had a balance sheet
+        ...(fin ? { fin: { cons: fin.cons, kind: fin.kind, q: fin.quarters.slice(-10).map((x) => ({ q: x.q, at: x.at, rev: x.rev, pat: x.own, op: x.op, eq: x.eq ?? null, debt: x.debt ?? null })) } } : {}),
       }),
     );
   }
@@ -513,7 +529,7 @@ export async function sync({ log = console.log } = {}) {
       idx: null,
       ...metrics(bars),
       y2: bars.length > 504 ? r1(pct(bars[at].c, bars[at - 504].c)) : null,
-      mcap: null, pe: null, eps: null, epsG: null, divY: null, cap: null, nextEx: null,
+      mcap: null, pe: null, eps: null, epsG: null, divY: null, revYoY: null, patYoY: null, opm: null, roe: null, de: null, cap: null, nextEx: null,
       fo: 0, foOiChg: null, oi5: null, pcr: null, iv: null, ivRank: null, build: null, ban: 0,
       pat: [], bm: null, filed: [], ca: ca.length,
       etf: {

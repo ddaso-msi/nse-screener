@@ -9,6 +9,7 @@
     "brief": "node scripts/brief.mjs",
     "backtest": "node scripts/backtest.mjs",
     "search": "node scripts/search.mjs",
+    "pack": "node scripts/pack.mjs",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview"
   },

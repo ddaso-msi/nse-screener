@@ -1,4 +1,4 @@
-// Each signed-in user's own watchlist, paper account and chart drawings, plus
+// Each signed-in user's own watchlist, paper account, chart drawings and trade journal, plus
 // the list of screens the evening brief follows (shared; only the admin edits it).
 import defaultScreens from '../../../scripts/default-screens.json';
 import { json } from '../../../server/auth.js';
@@ -6,6 +6,7 @@ import { json } from '../../../server/auth.js';
 const PERSONAL = {
   watchlist: {},
   drawings: {},
+  journal: { capital: null, riskPct: 1, trades: [] },
   paper: { start: 1000000, cash: 1000000, orders: [], positions: [], closed: [], equity: [], notices: [], last: null },
 };
 const MAX_BYTES = 400_000;

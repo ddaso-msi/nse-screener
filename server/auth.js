@@ -1,11 +1,13 @@
 // Accounts and sessions for the hosted site (Cloudflare Pages Functions).
 //
 //   acct:<name>            { salt, hash, created }   PBKDF2-SHA256 password hash
-//   u:<name>:<what>        that user's watchlist, paper account and drawings
+//   u:<name>:<what>        that user's watchlist, paper account, drawings and journal
 //   sys:secret             key used to sign session cookies (generated on first use)
 //   sys:admin              the first account created; only it can edit the brief's screens
 //
-// A session is a signed cookie "name.expiry.signature"; nothing is stored per session.
+// A session is a signed cookie "name.version.expiry.signature"; nothing is stored per
+// session. Bumping an account's version (password change, "sign out other
+// devices") invalidates every cookie issued before it.
 
 const enc = new TextEncoder();
 const COOKIE = 'sensa_session';
@@ -35,8 +37,8 @@ async function signingKey(env) {
 }
 const sign = async (env, text) => b64(await crypto.subtle.sign('HMAC', await signingKey(env), enc.encode(text)));
 
-export async function sessionCookie(env, name) {
-  const body = `${name}.${Date.now() + SESSION_DAYS * 864e5}`;
+export async function sessionCookie(env, name, version = 0) {
+  const body = `${name}.${version}.${Date.now() + SESSION_DAYS * 864e5}`;
   return `${COOKIE}=${body}.${await sign(env, body)}; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=${SESSION_DAYS * 86400}`;
 }
 export const clearCookie = `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`;
@@ -45,11 +47,15 @@ export const clearCookie = `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; 
 export async function sessionUser(env, request) {
   const raw = (request.headers.get('cookie') ?? '').split(/;\s*/).find((c) => c.startsWith(`${COOKIE}=`))?.slice(COOKIE.length + 1);
   if (!raw) return null;
-  const [name, expiry, signature] = raw.split('.');
+  const parts = raw.split('.');
+  // cookies from before versions existed have no version part; treat them as version 0
+  const [name, version, expiry, signature] = parts.length === 3 ? [parts[0], '0', parts[1], parts[2]] : parts;
   if (!name || !expiry || !signature || !NAME_RULE.test(name) || !(Number(expiry) > Date.now())) return null;
-  if (!(await same(signature, await sign(env, `${name}.${expiry}`)))) return null;
-  // an account removed by the admin stops working at once
-  return (await env.USER.get(`acct:${name}`)) ? name : null;
+  const signed = parts.length === 3 ? `${name}.${expiry}` : `${name}.${version}.${expiry}`;
+  if (!(await same(signature, await sign(env, signed)))) return null;
+  // a removed account, or one whose sessions were revoked, stops working at once
+  const acct = await env.USER.get(`acct:${name}`, 'json');
+  return acct && String(acct.ver ?? 0) === version ? name : null;
 }
 
 export async function hashPassword(password, salt) {

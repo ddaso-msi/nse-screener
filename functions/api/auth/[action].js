@@ -18,7 +18,8 @@ export async function onRequest({ request, env, params }) {
   if (action === 'me' && request.method === 'GET') {
     const name = await sessionUser(env, request);
     if (!name) return json({ error: 'Not signed in' }, 401);
-    return json({ name, admin: (await env.USER.get('sys:admin')) === name });
+    const acct = await env.USER.get(`acct:${name}`, 'json');
+    return json({ name, admin: (await env.USER.get('sys:admin')) === name, created: acct?.created ?? null });
   }
   if (request.method !== 'POST') return json({ error: 'Method not allowed' }, 405);
 
@@ -37,7 +38,7 @@ export async function onRequest({ request, env, params }) {
     const salt = newSalt();
     await env.USER.put(`acct:${name}`, JSON.stringify({ salt, hash: await hashPassword(password, salt), created: new Date().toISOString() }));
     if (!(await env.USER.get('sys:admin'))) await env.USER.put('sys:admin', name);
-    return json({ name }, 200, { 'set-cookie': await sessionCookie(env, name) });
+    return json({ name }, 200, { 'set-cookie': await sessionCookie(env, name, 0) });
   }
 
   if (action === 'login') {
@@ -47,7 +48,7 @@ export async function onRequest({ request, env, params }) {
     // hash even when the account does not exist, so both cases take the same time
     const hash = await hashPassword(password, acct?.salt ?? 'no-such-account');
     if (!acct || !(await same(hash, acct.hash))) return json({ error: 'Wrong name or password.' }, 401);
-    return json({ name }, 200, { 'set-cookie': await sessionCookie(env, name) });
+    return json({ name }, 200, { 'set-cookie': await sessionCookie(env, name, acct.ver ?? 0) });
   }
 
   if (action === 'password') {
@@ -56,9 +57,30 @@ export async function onRequest({ request, env, params }) {
     const acct = await env.USER.get(`acct:${me}`, 'json');
     if (!(await same(await hashPassword(String(b.current ?? ''), acct.salt), acct.hash))) return json({ error: 'Your current password is not right.' }, 403);
     if (password.length < MIN_PASSWORD) return json({ error: `Choose a password of at least ${MIN_PASSWORD} characters.` }, 400);
+    // a new password signs out every other device; this one gets a fresh session
     const salt = newSalt();
-    await env.USER.put(`acct:${me}`, JSON.stringify({ ...acct, salt, hash: await hashPassword(password, salt) }));
-    return json({ ok: true });
+    const ver = (acct.ver ?? 0) + 1;
+    await env.USER.put(`acct:${me}`, JSON.stringify({ ...acct, salt, hash: await hashPassword(password, salt), ver }));
+    return json({ ok: true }, 200, { 'set-cookie': await sessionCookie(env, me, ver) });
+  }
+
+  if (action === 'signout-others') {
+    const me = await sessionUser(env, request);
+    if (!me) return json({ error: 'Not signed in' }, 401);
+    const acct = await env.USER.get(`acct:${me}`, 'json');
+    const ver = (acct.ver ?? 0) + 1;
+    await env.USER.put(`acct:${me}`, JSON.stringify({ ...acct, ver }));
+    return json({ ok: true }, 200, { 'set-cookie': await sessionCookie(env, me, ver) });
+  }
+
+  if (action === 'delete') {
+    const me = await sessionUser(env, request);
+    if (!me) return json({ error: 'Not signed in' }, 401);
+    if ((await env.USER.get('sys:admin')) === me) return json({ error: "The site owner's account can't be deleted from the app." }, 403);
+    const acct = await env.USER.get(`acct:${me}`, 'json');
+    if (!(await same(await hashPassword(String(b.current ?? ''), acct.salt), acct.hash))) return json({ error: 'Your password is not right.' }, 403);
+    await Promise.all([`acct:${me}`, `u:${me}:watchlist`, `u:${me}:paper`, `u:${me}:drawings`, `u:${me}:journal`].map((k) => env.USER.delete(k)));
+    return json({ ok: true }, 200, { 'set-cookie': clearCookie });
   }
 
   return json({ error: 'Not found' }, 404);

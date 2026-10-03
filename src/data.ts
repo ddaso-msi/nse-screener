@@ -46,6 +46,16 @@ export interface Row {
   epsG: number | null;
   /** Dividends with an ex-date in the last 12 months / price, % */
   divY: number | null;
+  /** Latest quarter's sales vs the same quarter a year earlier, % */
+  revYoY: number | null;
+  /** Latest quarter's profit vs the same quarter a year earlier, % */
+  patYoY: number | null;
+  /** Operating profit / sales in the latest quarter, % (not for banks and lenders) */
+  opm: number | null;
+  /** Last four quarters' profit / shareholders' equity, % */
+  roe: number | null;
+  /** Borrowings / shareholders' equity (not for banks and lenders) */
+  de: number | null;
   /** L / M / S by market-cap rank (top 100, next 150, rest) */
   cap: 'L' | 'M' | 'S' | null;
   nextEx: { ex: number; text: string } | null;
@@ -118,6 +128,12 @@ export interface History {
   acts: { ex: number; text: string }[];
   /** Where each current pattern starts, its pivot (level) and its low */
   pat?: { code: PatternCode; from: number; level: number; low: number }[];
+  /** Quarterly results in ₹ Cr, oldest first. kind: N company, B bank, F other lender */
+  fin?: {
+    cons: 0 | 1;
+    kind: 'N' | 'B' | 'F';
+    q: { q: number; at: number; rev: number; pat: number; op: number | null; eq: number | null; debt: number | null }[];
+  };
 }
 
 export type NumKey =
@@ -125,6 +141,7 @@ export type NumKey =
   | 'fromHi' | 'fromLo' | 'vs20' | 'vs50' | 'vs200'
   | 'rsi' | 'volX' | 'deliv' | 'avgTurnover' | 'turnover'
   | 'mcap' | 'pe' | 'epsG' | 'divY' | 'rs'
+  | 'revYoY' | 'patYoY' | 'opm' | 'roe' | 'de'
   | 'foOiChg' | 'oi5' | 'pcr' | 'ivRank';
 
 export type Flag = 'newHi' | 'newLo' | 'golden' | 'death' | 'longBuild' | 'shortBuild' | 'shortCover' | 'longUnwind' | PatternCode;
@@ -191,6 +208,11 @@ export const FIELD_GROUPS: { title: string; fields: FieldDef[] }[] = [
       { key: 'pe', label: 'P/E', unit: '', hint: 'NSE trailing P/E. Loss-making companies have none and are excluded by any P/E filter.' },
       { key: 'epsG', label: 'Earnings growth 1Y', unit: '%', hint: 'Trailing 12-month earnings vs a year earlier' },
       { key: 'divY', label: 'Dividend yield', unit: '%', hint: 'Dividends that went ex in the last 12 months / price' },
+      { key: 'revYoY', label: 'Sales growth', unit: '%', hint: "Latest quarter's sales vs the same quarter a year earlier, from the company's results filing" },
+      { key: 'patYoY', label: 'Profit growth', unit: '%', hint: "Latest quarter's profit vs the same quarter a year earlier. Blank if the earlier quarter was a loss." },
+      { key: 'opm', label: 'Operating margin', unit: '%', hint: 'Profit before interest, depreciation, tax and other income, as a share of sales. Not shown for banks and lenders.' },
+      { key: 'roe', label: 'Return on equity', unit: '%', hint: "The last four quarters' profit as a share of shareholders' equity" },
+      { key: 'de', label: 'Debt to equity', unit: '×', hint: "Borrowings divided by shareholders' equity, from the latest balance sheet (filed twice a year). Not shown for banks and lenders." },
     ],
   },
   {
@@ -346,6 +368,7 @@ export function toCsv(rows: Row[]) {
     ['Symbol', 's'], ['Company', 'name'], ['Sector', 'sector'], ['Index', 'idx'], ['Close', 'close'],
     ['Day %', 'chg'], ['1W %', 'w1'], ['1M %', 'm1'], ['3M %', 'm3'], ['6M %', 'm6'], ['1Y %', 'y1'],
     ['Market Cap Cr', 'mcap'], ['P/E', 'pe'], ['EPS', 'eps'], ['Earnings Growth 1Y %', 'epsG'], ['Dividend Yield %', 'divY'],
+    ['Sales Growth YoY %', 'revYoY'], ['Profit Growth YoY %', 'patYoY'], ['Operating Margin %', 'opm'], ['ROE %', 'roe'], ['Debt/Equity', 'de'],
     ['Relative Strength', 'rs'], ['Futures OI Chg %', 'foOiChg'], ['Futures Position', 'build'], ['Put/Call Ratio', 'pcr'], ['IV %', 'iv'], ['IV Rank', 'ivRank'], ['RSI 14', 'rsi'], ['vs 20DMA %', 'vs20'], ['vs 50DMA %', 'vs50'], ['vs 200DMA %', 'vs200'],
     ['52W High', 'hi52'], ['52W Low', 'lo52'], ['From 52W High %', 'fromHi'], ['Volume', 'vol'],
     ['Volume x 20D avg', 'volX'], ['Delivery %', 'deliv'], ['Avg Turnover Cr', 'avgTurnover'],
