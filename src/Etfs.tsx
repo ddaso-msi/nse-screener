@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import { fmtCr, fmtDate, fmtPct, fmtPrice, sortRows, type Row } from './data';
 import { Delta, Meter, RangeBar, Spark, tone } from './ui';
+import { Explain } from './Help';
 import type { Watchlist } from './user';
 
 type Mode = 'trade' | 'invest';
@@ -153,10 +154,10 @@ export function Etfs({ etfs, watchlist, onToggleWatch, onOpenStock, selected }: 
                   <thead>
                     <tr>
                       <th className="sym">Fund</th>
-                      <th title="Total expense ratio: what the fund charges each year, as a share of your holding">Yearly cost</th>
+                      <th title="Total expense ratio: what the fund charges each year, as a share of your holding">Yearly cost <Explain term="ter" /></th>
                       <th title="What that cost comes to on ₹1 lakh held for a year">On ₹1 lakh</th>
                       <th title="20-session average daily turnover, ₹ crore. Higher is easier to trade.">Daily turnover</th>
-                      <th title="Today's closing price against the fund's NAV. Positive means you pay more than the holdings are worth.">Price vs NAV</th>
+                      <th title="Today's closing price against the fund's NAV. Positive means you pay more than the holdings are worth.">Price vs NAV <Explain term="nav" /></th>
                       <th title="Average gap between price and NAV over the last 60 sessions">60-day average</th>
                       <th>1 year</th>
                       <th>2 years</th>

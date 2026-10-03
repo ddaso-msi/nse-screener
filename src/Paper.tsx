@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fmtDate, fmtPct, fmtPrice, monthOf, type Row } from './data';
 import { NumInput } from './NumInput';
+import { Explain } from './Help';
 import { Delta, Icon, tone } from './ui';
 import { NEW_PAPER, PAPER_FEE, type Paper, type PaperPosition } from './user';
 
@@ -110,7 +111,7 @@ export function PaperTab({ paper, onSave, onReload, rowOf, asOf, onOpenStock, on
     <div className="bt paper">
       <div className="bt-head first">
         <div>
-          <h2>Paper trading</h2>
+          <h2>Paper trading <Explain term="paper" /></h2>
           <p>A practice account with ₹{int.format(paper.start)} of virtual money. Orders fill at the next session's open; stops and targets are checked against each day's prices.</p>
         </div>
         {!empty && (

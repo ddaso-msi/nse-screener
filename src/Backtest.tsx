@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { NumInput } from './NumInput';
+import { Explain } from './Help';
 import { HOSTED, describeFilters, fmtDate, fmtPct, type Filters } from './data';
 
 interface Stats {
@@ -243,7 +244,7 @@ export function Backtest({ filters, onOpenPreset: onOpen, onOpenFilters }: {
       {custom}
       <div className="bt-head">
         <div>
-          <h2>Preset screens, fixed hold, before costs</h2>
+          <h2>Preset screens, fixed hold, before costs <Explain term="backtest" /></h2>
           <p>
             {fmtDate(data.from)} – {fmtDate(data.to)} · {data.sessions} sessions · {data.symbols.toLocaleString('en-IN')} stocks
           </p>

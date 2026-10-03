@@ -26,7 +26,8 @@ function Mark({ size }: { size: number }) {
 }
 
 /** The first page: the name, one line about today, a search box, and the ways in. */
-export function Home({ data, searchRows, onGo, onPick, theme, onTheme }: {
+export function Home({ data, searchRows, onGo, onPick, theme, onTheme, onHelp }: {
+  onHelp: () => void;
   data: Dataset;
   /** Stocks and ETFs */
   searchRows: Row[];
@@ -73,7 +74,9 @@ export function Home({ data, searchRows, onGo, onPick, theme, onTheme }: {
         </nav>
       </main>
 
-      <footer>End-of-day data from the NSE archive · {data.rows.length.toLocaleString('en-IN')} stocks · Not investment advice</footer>
+      <footer>
+        <button className="link first" onClick={onHelp}>How Sensa works</button> · End-of-day data from the NSE archive · {data.rows.length.toLocaleString('en-IN')} stocks · Not investment advice
+      </footer>
     </div>
   );
 }

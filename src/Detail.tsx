@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Chart } from './Chart';
 import { NumInput } from './NumInput';
+import { Explain } from './Help';
+import type { Term } from './glossary';
 import { Delta } from './ui';
 import { PAPER_FEE, type Paper, type WatchItem } from './user';
 import { BUILD_LABEL, CAP_LABEL, IDX_LABEL, PATTERN_LABEL, fmtMcap, fileSafe, fmtCr, fmtDate, fmtPct, fmtPrice, fmtQty, type History, type Row } from './data';
@@ -12,10 +14,10 @@ interface Filed {
   meetings: { date: number; purpose: string; results: boolean }[];
 }
 
-function Stat({ label, value, cls = '' }: { label: string; value: string; cls?: string }) {
+function Stat({ label, value, cls = '', term }: { label: string; value: string; cls?: string; term?: Term }) {
   return (
     <div className="stat">
-      <span>{label}</span>
+      <span>{label}{term && <Explain term={term} />}</span>
       <b className={cls}>{value}</b>
     </div>
   );
@@ -71,6 +73,7 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
 
   useEffect(() => {
     setFiled(null);
+    if (row.etf) return; // funds file no announcements
     let live = true;
     fetch(`/data/n/${fileSafe(row.s)}.json`)
       .then((r) => (r.ok ? r.json() : null))
@@ -199,9 +202,9 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
           <div className="stats">
             <Stat label="Tracks" value={row.etf.underlying} />
             <Stat label="Type" value={row.etf.category} />
-            <Stat label="Yearly cost" value={row.etf.ter == null ? '–' : `${row.etf.ter.toFixed(2)}%`} />
+            <Stat term="ter" label="Yearly cost" value={row.etf.ter == null ? '–' : `${row.etf.ter.toFixed(2)}%`} />
             <Stat label="NAV" value={row.etf.nav == null ? '–' : `₹${fmtPrice(row.etf.nav)}`} />
-            <Stat label="Price vs NAV today" value={fmtPct(row.etf.prem, 2)} />
+            <Stat term="nav" label="Price vs NAV today" value={fmtPct(row.etf.prem, 2)} />
             <Stat label="Price vs NAV, 60-day avg" value={fmtPct(row.etf.premAvg, 2)} />
           </div>
           <p className="note">
@@ -214,7 +217,7 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
       {!row.etf && <h3>Fundamentals</h3>}
       <div className="stats" hidden={!!row.etf}>
         <Stat label="Market cap" value={row.mcap == null ? '–' : `₹${fmtMcap(row.mcap)}`} />
-        <Stat label="P/E (trailing)" value={row.pe == null ? 'None (loss or n/a)' : row.pe.toFixed(1)} />
+        <Stat term="pe" label="P/E (trailing)" value={row.pe == null ? 'None (loss or n/a)' : row.pe.toFixed(1)} />
         <Stat label="EPS (trailing)" value={row.eps == null ? '–' : `₹${fmtPrice(row.eps)}`} />
         <Stat label="Earnings growth 1Y" value={fmtPct(row.epsG)} cls={tone(row.epsG)} />
         <Stat label="Dividend yield" value={row.divY == null ? '–' : `${row.divY.toFixed(2)}%`} />
@@ -225,12 +228,12 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
         <>
           <h3>Derivatives</h3>
           <div className="stats">
-            <Stat label="Futures OI today" value={fmtPct(row.foOiChg)} cls={tone(row.foOiChg)} />
+            <Stat term="futOi" label="Futures OI today" value={fmtPct(row.foOiChg)} cls={tone(row.foOiChg)} />
             <Stat label="Futures OI, 5 sessions" value={fmtPct(row.oi5)} cls={tone(row.oi5)} />
             <Stat label="Position today" value={row.build ? BUILD_LABEL[row.build] : 'No clear change'} cls={row.build ? (row.build === 'LB' || row.build === 'SC' ? 'up' : 'down') : ''} />
-            <Stat label="Put/call ratio" value={row.pcr == null ? '–' : row.pcr.toFixed(2)} />
+            <Stat term="pcr" label="Put/call ratio" value={row.pcr == null ? '–' : row.pcr.toFixed(2)} />
             <Stat label="Implied volatility" value={row.iv == null ? '–' : `${row.iv.toFixed(1)}%`} />
-            <Stat label="IV rank (1 year)" value={row.ivRank == null ? '–' : `${row.ivRank.toFixed(0)} of 100`} />
+            <Stat term="ivRank" label="IV rank (1 year)" value={row.ivRank == null ? '–' : `${row.ivRank.toFixed(0)} of 100`} />
           </div>
           {row.ban === 1 && <p className="note down">In the F&O ban period: no new derivative positions are allowed until open interest falls.</p>}
         </>
@@ -267,8 +270,8 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
         <Stat label="3 months" value={fmtPct(row.m3)} cls={tone(row.m3)} />
         <Stat label="6 months" value={fmtPct(row.m6)} cls={tone(row.m6)} />
         <Stat label="1 year" value={fmtPct(row.y1)} cls={tone(row.y1)} />
-        <Stat label="RSI (14)" value={row.rsi == null ? '–' : row.rsi.toFixed(1)} />
-        <Stat label="Relative strength" value={row.rs == null ? '–' : `${row.rs} of 99`} />
+        <Stat term="rsi" label="RSI (14)" value={row.rsi == null ? '–' : row.rsi.toFixed(1)} />
+        <Stat term="rs" label="Relative strength" value={row.rs == null ? '–' : `${row.rs} of 99`} />
       </div>
 
       <h3>Trend</h3>
@@ -288,7 +291,7 @@ export function Detail({ row, onClose, onOpenChart, watch, onToggleWatch, onEdit
         <Stat label="vs 20D average" value={row.volX == null ? '–' : `${row.volX.toFixed(2)}×`} />
         <Stat label="Turnover" value={`₹${fmtCr(row.turnover)} Cr`} />
         <Stat label="Avg turnover (20D)" value={`₹${fmtCr(row.avgTurnover)} Cr`} />
-        <Stat label="Delivery" value={row.deliv == null ? '–' : `${row.deliv.toFixed(1)}%`} />
+        <Stat term="deliv" label="Delivery" value={row.deliv == null ? '–' : `${row.deliv.toFixed(1)}%`} />
         <Stat label="Avg delivery (20D)" value={row.delivAvg == null ? '–' : `${row.delivAvg.toFixed(1)}%`} />
       </div>
 

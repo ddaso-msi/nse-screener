@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { fileSafe, fmtDate, fmtPct, fmtPrice } from './data';
 import { TEMPLATES, analyse, type Chain, type Expiry, type Leg, type OptionHead, type Position, type StrikeRow } from './optionMath';
 import { Delta, Icon, tone } from './ui';
+import { Explain } from './Help';
 
 const NEAR = 10; // strikes shown either side of the money before "Show all"
 
@@ -320,14 +321,14 @@ export function Options() {
       <div className="tiles">
         <div className="tile"><span>{chain.name}</span><b className="row">{fmtPrice(chain.spot)} <Delta value={chain.chg} /></b><small>Lot size {chain.lot ? int.format(chain.lot) : '–'}</small></div>
         <div className="tile" title="Volatility implied by at-the-money option prices for this expiry">
-          <span>Implied volatility</span><b>{exp.atmIv == null ? '–' : `${exp.atmIv.toFixed(1)}%`}</b>
+          <span>Implied volatility <Explain term="ivRank" /></span><b>{exp.atmIv == null ? '–' : `${exp.atmIv.toFixed(1)}%`}</b>
           <small>{chain.ivRank == null ? 'Not enough history for a rank' : `Higher than ${chain.ivRank.toFixed(0)}% of the past year`}</small>
         </div>
         <div className="tile" title="One standard deviation, from implied volatility">
           <span>Move priced in by expiry</span><b>±{int.format(width)}</b><small>±{((width / chain.spot) * 100).toFixed(1)}% in {exp.days} day{exp.days === 1 ? '' : 's'}</small>
         </div>
-        <div className="tile"><span>Put/call ratio</span><b>{exp.pcr?.toFixed(2) ?? '–'}</b><small>{compact(exp.putOi)} puts / {compact(exp.callOi)} calls</small></div>
-        <div className="tile" title="The expiry price at which option buyers, in total, are paid the least"><span>Max pain</span><b>{exp.maxPain ? int.format(exp.maxPain) : '–'}</b><small>{exp.maxPain ? fmtPct((exp.maxPain / chain.spot - 1) * 100) : ''} from the price</small></div>
+        <div className="tile"><span>Put/call ratio <Explain term="pcr" /></span><b>{exp.pcr?.toFixed(2) ?? '–'}</b><small>{compact(exp.putOi)} puts / {compact(exp.callOi)} calls</small></div>
+        <div className="tile" title="The expiry price at which option buyers, in total, are paid the least"><span>Max pain <Explain term="maxPain" /></span><b>{exp.maxPain ? int.format(exp.maxPain) : '–'}</b><small>{exp.maxPain ? fmtPct((exp.maxPain / chain.spot - 1) * 100) : ''} from the price</small></div>
       </div>
 
       <div className="expiries" role="group" aria-label="Expiry">

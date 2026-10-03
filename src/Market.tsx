@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { fmtDate, fmtPct, monthOf } from './data';
 import { Delta, Spark, tone } from './ui';
+import { Explain } from './Help';
 
 interface Summary {
   n: number;
@@ -234,7 +235,7 @@ export function BreadthMeter({ market }: { market: MarketData }) {
   const then = market.above200MonthAgo;
   return (
     <div className="breadth">
-      <span className="lbl">Stocks above their 200-day average</span>
+      <span className="lbl">Stocks above their 200-day average <Explain term="breadth" /></span>
       <div className="breadth-value">
         <b>{pc(now)}</b>
         {then != null && now != null && (

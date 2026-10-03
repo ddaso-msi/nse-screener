@@ -3,7 +3,9 @@ import { Backtest } from './Backtest';
 import { Brief } from './Brief';
 import { APP_NAME } from './brand';
 import { ChartTab } from './ChartTab';
+import { Explain, HelpPanel } from './Help';
 import { Home } from './Home';
+import type { Term } from './glossary';
 import { News } from './News';
 import { Options } from './Options';
 import { PaperTab } from './Paper';
@@ -35,7 +37,7 @@ const loadSaved = (): Saved[] => {
 
 const pctCell = (v: number | null) => <span className={tone(v)}>{fmtPct(v)}</span>;
 
-const COLUMNS: { key: keyof Row; label: string; title?: string; cell: (r: Row) => React.ReactNode }[] = [
+const COLUMNS: { key: keyof Row; label: string; term?: Term; title?: string; cell: (r: Row) => React.ReactNode }[] = [
   { key: 'close', label: 'Price', cell: (r) => fmtPrice(r.close) },
   { key: 'chg', label: 'Day', cell: (r) => <Delta value={r.chg} /> },
   { key: 'w1', label: '1W', cell: (r) => pctCell(r.w1) },
@@ -43,9 +45,9 @@ const COLUMNS: { key: keyof Row; label: string; title?: string; cell: (r: Row) =
   { key: 'm3', label: '3M', cell: (r) => pctCell(r.m3) },
   { key: 'm6', label: '6M', cell: (r) => pctCell(r.m6) },
   { key: 'y1', label: '1Y', cell: (r) => pctCell(r.y1) },
-  { key: 'rs', label: 'RS', title: 'Relative strength, 1–99: share of stocks outperformed over the past year', cell: (r) => <Meter value={r.rs} /> },
+  { key: 'rs', label: 'RS', term: 'rs', title: 'Relative strength, 1–99: share of stocks outperformed over the past year', cell: (r) => <Meter value={r.rs} /> },
   {
-    key: 'foOiChg', label: 'Fut OI', title: 'Change in futures open interest today, and what it means with the price move (F&O stocks only)',
+    key: 'foOiChg', label: 'Fut OI', term: 'futOi', title: 'Change in futures open interest today, and what it means with the price move (F&O stocks only)',
     cell: (r) =>
       r.fo ? (
         <span className="oi-cell">
@@ -55,12 +57,12 @@ const COLUMNS: { key: keyof Row; label: string; title?: string; cell: (r: Row) =
       ) : <span className="muted">–</span>,
   },
   { key: 'mcap', label: 'M.Cap', title: 'Market capitalisation, ₹ crore', cell: (r) => fmtMcap(r.mcap) },
-  { key: 'pe', label: 'P/E', title: 'NSE trailing P/E', cell: (r) => (r.pe == null ? '–' : r.pe.toFixed(1)) },
-  { key: 'rsi', label: 'RSI', title: '14-session RSI', cell: (r) => (r.rsi == null ? '–' : r.rsi.toFixed(0)) },
+  { key: 'pe', label: 'P/E', term: 'pe', title: 'NSE trailing P/E', cell: (r) => (r.pe == null ? '–' : r.pe.toFixed(1)) },
+  { key: 'rsi', label: 'RSI', term: 'rsi', title: '14-session RSI', cell: (r) => (r.rsi == null ? '–' : r.rsi.toFixed(0)) },
   { key: 'vs50', label: 'vs 50D', title: 'Price vs 50-day moving average', cell: (r) => pctCell(r.vs50) },
-  { key: 'vs200', label: 'vs 200D', title: 'Price vs 200-day moving average', cell: (r) => pctCell(r.vs200) },
+  { key: 'vs200', label: 'vs 200D', term: 'dma', title: 'Price vs 200-day moving average', cell: (r) => pctCell(r.vs200) },
   {
-    key: 'fromHi', label: '52W range', title: 'Where the price sits between its 52-week low and high, and the distance from the high',
+    key: 'fromHi', label: '52W range', term: 'range52', title: 'Where the price sits between its 52-week low and high, and the distance from the high',
     cell: (r) => (
       <span className="range-cell">
         <RangeBar low={r.lo52} high={r.hi52} value={r.close} title={`52-week low ₹${fmtPrice(r.lo52)}, high ₹${fmtPrice(r.hi52)}`} />
@@ -68,9 +70,9 @@ const COLUMNS: { key: keyof Row; label: string; title?: string; cell: (r: Row) =
       </span>
     ),
   },
-  { key: 'volX', label: 'Vol ×', title: 'Volume vs 20-session average', cell: (r) => (r.volX == null ? '–' : `${r.volX.toFixed(1)}×`) },
-  { key: 'deliv', label: 'Deliv', title: 'Delivery percentage', cell: (r) => (r.deliv == null ? '–' : `${r.deliv.toFixed(0)}%`) },
-  { key: 'avgTurnover', label: 'Turnover', title: '20-session average daily turnover, ₹ crore', cell: (r) => fmtCr(r.avgTurnover) },
+  { key: 'volX', label: 'Vol ×', term: 'volX', title: 'Volume vs 20-session average', cell: (r) => (r.volX == null ? '–' : `${r.volX.toFixed(1)}×`) },
+  { key: 'deliv', label: 'Deliv', term: 'deliv', title: 'Delivery percentage', cell: (r) => (r.deliv == null ? '–' : `${r.deliv.toFixed(0)}%`) },
+  { key: 'avgTurnover', label: 'Turnover', term: 'turnover', title: '20-session average daily turnover, ₹ crore', cell: (r) => fmtCr(r.avgTurnover) },
 ];
 
 export default function App() {
@@ -84,11 +86,24 @@ export default function App() {
   const [saved, setSaved] = useState<Saved[]>(loadSaved);
   const [view, setView] = useState<'home' | 'brief' | 'screener' | 'etfs' | 'chart' | 'paper' | 'options' | 'news' | 'backtest'>('home');
   const [chartSymbol, setChartSymbol] = useState<string | null>(null);
+  // help: opens by itself the first time someone visits on this device
+  const [help, setHelp] = useState<'welcome' | 'glossary' | null>(() => {
+    try {
+      return localStorage.getItem('nse-screener.welcomed') ? null : 'welcome';
+    } catch {
+      return null;
+    }
+  });
+  const closeHelp = useCallback(() => {
+    setHelp(null);
+    try { localStorage.setItem('nse-screener.welcomed', '1'); } catch { /* private mode */ }
+  }, []);
   const [drawings, saveDrawings] = useDrawings();
   const [paper, savePaper, paperLoaded, reloadPaper] = usePaper();
   // who is signed in (hosted site only; the local app has a single user)
   const [me, setMe] = useState<{ name: string; admin: boolean } | null>(null);
   useEffect(() => {
+    if (!HOSTED) return; // the local app has no sign-in
     fetch('/api/auth/me').then((r) => (r.ok ? r.json() : null)).then((u) => u?.name && setMe(u)).catch(() => {});
   }, []);
   const signOut = async () => {
@@ -99,6 +114,8 @@ export default function App() {
   const [watchlist, saveWatchlist] = useWatchlist();
   const [briefScreens, saveBriefScreens] = useBriefScreens();
   const [watchOnly, setWatchOnly] = useState(false);
+  // phones show the criteria only on request; the screen list stays visible
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const [briefKey, setBriefKey] = useState(0);
   const [theme, nextTheme] = useTheme();
   const [syncing, setSyncing] = useState(false);
@@ -135,7 +152,8 @@ export default function App() {
     [data],
   );
   const rows = useMemo(
-    () => (data ? sortRows(applyFilters(watchOnly ? data.rows.filter((r) => watchlist[r.s]) : data.rows, filters), sort[0], sort[1]) : []),
+    // the watchlist view includes starred ETFs as well as stocks
+    () => (data ? sortRows(applyFilters(watchOnly ? [...data.rows, ...(data.etfs ?? [])].filter((r) => watchlist[r.s]) : data.rows, filters), sort[0], sort[1]) : []),
     [data, filters, sort, watchOnly, watchlist],
   );
   // stocks and ETFs together: for search, the stock panel, the chart, the watchlist and paper trades
@@ -273,8 +291,10 @@ export default function App() {
   if (!data) return <div className="empty-app">Loading…</div>;
 
   return (
-    <div className={`app view-${view} ${selectedRow && view === 'screener' ? 'with-detail' : ''}`}>
-      {view === 'home' && <Home data={data} searchRows={everything} onGo={setView} onPick={openStock} theme={theme} onTheme={nextTheme} />}
+    <div className={`app view-${view} ${selectedRow && view === 'screener' ? 'with-detail' : ''} ${filtersOpen ? 'filters-open' : ''}`}>
+      {help && <HelpPanel start={help} onClose={closeHelp} onOpenBrief={() => setView('brief')} />}
+
+      {view === 'home' && <Home onHelp={() => setHelp('welcome')} data={data} searchRows={everything} onGo={setView} onPick={openStock} theme={theme} onTheme={nextTheme} />}
 
       {view !== 'home' && <header className="top">
         <button className="brand" onClick={() => setView('home')} title={`${APP_NAME} home`}>
@@ -309,6 +329,7 @@ export default function App() {
               {me.name} · Sign out
             </button>
           )}
+          <button className="ghost square" onClick={() => setHelp('welcome')} aria-label="Help" title="How Sensa works, and what the terms mean">?</button>
           <button className="ghost square" onClick={nextTheme} aria-label={`Theme: ${theme}. Click to change.`} title={`Theme: ${theme}`}>
             <Icon name={theme === 'auto' ? 'auto' : theme === 'dark' ? 'moon' : 'sun'} />
           </button>
@@ -385,7 +406,7 @@ export default function App() {
         </section>
 
         <section>
-          <h3>Chart patterns</h3>
+          <h3>Chart patterns <Explain term="pattern" /></h3>
           <ul className="presets">
             {PRESETS.filter((p) => p.group === 'pattern').map((p) => (
               <li key={p.id}>
@@ -469,6 +490,9 @@ export default function App() {
 
       {view === 'screener' && <main>
         <div className="toolbar">
+          <button className="filters-toggle" onClick={() => setFiltersOpen((o) => !o)} aria-expanded={filtersOpen}>
+            <Icon name="filter" /> {filtersOpen ? 'Hide filters' : 'Filters'}{criteria > 0 && <em>{criteria}</em>}
+          </button>
           <input
             type="search"
             placeholder="Filter these results"
@@ -531,6 +555,7 @@ export default function App() {
                     aria-sort={sort[0] === c.key ? (sort[1] === 1 ? 'ascending' : 'descending') : undefined}
                   >
                     {c.label}
+                    {c.term && <Explain term={c.term} />}
                     {sort[0] === c.key && <i>{sort[1] === 1 ? '▲' : '▼'}</i>}
                   </th>
                 ))}
