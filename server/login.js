@@ -29,11 +29,7 @@ export const loginPage = `<!doctype html>
   button[type="submit"]:disabled { opacity: .6; cursor: default; }
   .error { min-height: 20px; color: #ffc2c2; font-size: 13px; text-align: center; }
   small { display: block; margin-top: 4px; color: rgb(255 255 255 / .55); font-size: 12px; }
-  [hidden] { display: none !important; }
-  .google { display: flex; align-items: center; justify-content: center; gap: 10px; margin-top: 28px; padding: 11px; border-radius: 10px; background: #fff; color: #1f1f1f; font-weight: 600; text-decoration: none; }
-  .or { display: flex; align-items: center; gap: 12px; margin: 18px 0 -10px; color: rgb(255 255 255 / .5); font-size: 12px; }
-  .or::before, .or::after { content: ""; flex: 1; height: 1px; background: rgb(255 255 255 / .18); }
-  .who { margin-top: 26px; padding: 10px 12px; border-radius: 10px; background: rgb(255 255 255 / .08); font-size: 13px; }
+  [hidden] { display: none; }
 </style>
 </head>
 <body>
@@ -42,23 +38,7 @@ export const loginPage = `<!doctype html>
   <h1>Sensa</h1>
   <p>The Indian market, after the bell.</p>
 
-  <div id="google" hidden>
-    <a class="google" href="/api/auth/google">
-      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9.1 3.6l6.8-6.8C35.8 2.4 30.3 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.9 6.2C12.4 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.500-4.800 7.200l7.700 6c4.500-4.200 6.900-10.300 6.900-17.700z"/><path fill="#FBBC05" d="M10.5 28.600a14.500 14.500 0 0 1 0-9.200l-7.900-6.200a24 24 0 0 0 0 21.600z"/><path fill="#34A853" d="M24 48c6.500 0 11.900-2.100 15.900-5.800l-7.700-6c-2.200 1.500-5 2.300-8.200 2.300-6.300 0-11.600-4.100-13.500-9.900l-7.900 6.200C6.500 42.600 14.600 48 24 48z"/></svg>
-      Continue with Google
-    </a>
-    <div class="or">or</div>
-  </div>
-
-  <form id="finish" hidden>
-    <p class="who">Signed in to Google as <b id="email"></b>. Choose a name and enter your invite code to finish.</p>
-    <label>Name <input name="name" autocapitalize="none" spellcheck="false" required minlength="3" maxlength="20"></label>
-    <label>Invite code <input name="invite" type="password" autocomplete="off" required><small>The code the site's owner gave you. You only need it this once.</small></label>
-    <div class="error" id="finish-error" role="alert"></div>
-    <button type="submit" id="finish-go">Create account</button>
-  </form>
-
-  <div class="tabs" role="tablist" id="tabs">
+  <div class="tabs" role="tablist">
     <button role="tab" id="tab-login" aria-selected="true">Sign in</button>
     <button role="tab" id="tab-signup" aria-selected="false">Create account</button>
   </div>
@@ -75,31 +55,6 @@ export const loginPage = `<!doctype html>
   let mode = 'login';
   const $ = (id) => document.getElementById(id);
   const form = $('form');
-  const googleOn = __GOOGLE__, pendingEmail = __PENDING__;
-  $('google').hidden = !googleOn || !!pendingEmail;
-  const problem = new URLSearchParams(location.search).get('signin');
-  if (pendingEmail) {
-    // came back from Google with an account we have not seen: ask for a name and the invite code
-    $('email').textContent = pendingEmail;
-    $('finish').hidden = false;
-    form.hidden = true;
-    $('tabs').hidden = true;
-    $('finish').onsubmit = async (e) => {
-      e.preventDefault();
-      $('finish-go').disabled = true;
-      $('finish-error').textContent = '';
-      try {
-        const f = $('finish');
-        const res = await fetch('/api/auth/google-finish', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: f.name.value, invite: f.invite.value }) });
-        const body = await res.json().catch(() => ({}));
-        if (!res.ok) throw new Error(body.error || 'Something went wrong. Try again.');
-        location.replace('/');
-      } catch (err) {
-        $('finish-error').textContent = err.message;
-        $('finish-go').disabled = false;
-      }
-    };
-  }
   function show(next) {
     mode = next;
     $('tab-login').setAttribute('aria-selected', String(mode === 'login'));
@@ -110,7 +65,6 @@ export const loginPage = `<!doctype html>
     $('go').textContent = mode === 'signup' ? 'Create account' : 'Sign in';
     $('error').textContent = '';
   }
-  if (problem) { $('error').textContent = problem; history.replaceState(null, '', '/'); }
   $('tab-login').onclick = () => show('login');
   $('tab-signup').onclick = () => show('signup');
   form.onsubmit = async (e) => {
