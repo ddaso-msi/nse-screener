@@ -1,6 +1,10 @@
-# NSE Screener
+# Sensa
 
-End-of-day stock screener for every company listed on the NSE.
+End-of-day analysis of the Indian market: a stock screener and research app for every company listed on the NSE.
+
+**Live app:** https://nse-screener.pages.dev (private; sign-in required)
+
+![Sensa's first page: the name, a search box, a line on today's market and the nine sections](docs/home.png)
 
 ```bash
 npm install
