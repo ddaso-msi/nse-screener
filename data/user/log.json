@@ -6,7 +6,7 @@
     "label": "Delivery accumulation",
     "s": "ALKEM",
     "close": 5220,
-    "last": 1.57,
+    "last": 2.7,
     "entry": 5210
   },
   {
@@ -16,7 +16,7 @@
     "label": "Delivery accumulation",
     "s": "ASIANPAINT",
     "close": 2407,
-    "last": 1.01,
+    "last": -1.16,
     "entry": 2400
   },
   {
@@ -26,7 +26,7 @@
     "label": "Delivery accumulation",
     "s": "BAJAJFINSV",
     "close": 1732.6,
-    "last": 0.44,
+    "last": -0.09,
     "entry": 1744.8
   },
   {
@@ -36,7 +36,7 @@
     "label": "Delivery accumulation",
     "s": "CARYSIL",
     "close": 1044.8,
-    "last": -2.42,
+    "last": -4.84,
     "entry": 1058.7
   },
   {
@@ -46,7 +46,7 @@
     "label": "Delivery accumulation",
     "s": "CCL",
     "close": 1056.6,
-    "last": -0.16,
+    "last": -0.41,
     "entry": 1056.6
   },
   {
@@ -56,7 +56,7 @@
     "label": "Delivery accumulation",
     "s": "GLOBAL",
     "close": 136.51,
-    "last": 3.35,
+    "last": 4.92,
     "entry": 138
   },
   {
@@ -66,7 +66,7 @@
     "label": "Delivery accumulation",
     "s": "HDFCAMC",
     "close": 2308.1,
-    "last": 1.92,
+    "last": 0.29,
     "entry": 2308.1
   },
   {
@@ -76,7 +76,7 @@
     "label": "Delivery accumulation",
     "s": "NAVNETEDUL",
     "close": 123.87,
-    "last": -1.53,
+    "last": -1.78,
     "entry": 126.2
   },
   {
@@ -86,7 +86,7 @@
     "label": "Delivery accumulation",
     "s": "NYKAA",
     "close": 324.95,
-    "last": 0.96,
+    "last": 1.87,
     "entry": 335
   },
   {
@@ -96,7 +96,7 @@
     "label": "Delivery accumulation",
     "s": "RUPA",
     "close": 130.58,
-    "last": -0.86,
+    "last": -1.91,
     "entry": 130.11
   },
   {
@@ -106,7 +106,7 @@
     "label": "Delivery accumulation",
     "s": "SBILIFE",
     "close": 1721.6,
-    "last": 1.65,
+    "last": 0.26,
     "entry": 1721.6
   },
   {
@@ -116,7 +116,7 @@
     "label": "Delivery accumulation",
     "s": "SRF",
     "close": 2486.2,
-    "last": -0.6,
+    "last": -1,
     "entry": 2484.9
   },
   {
@@ -126,7 +126,7 @@
     "label": "Delivery accumulation",
     "s": "STOVEKRAFT",
     "close": 809.15,
-    "last": -0.19,
+    "last": 0.29,
     "entry": 815
   },
   {
@@ -136,7 +136,7 @@
     "label": "52-week breakout with delivery",
     "s": "AAREYDRUGS",
     "close": 103.85,
-    "last": 3.68,
+    "last": 4.6,
     "entry": 104.02
   },
   {
@@ -146,7 +146,7 @@
     "label": "52-week breakout with delivery",
     "s": "ONEPOINT",
     "close": 74.37,
-    "last": 4.73,
+    "last": 4.89,
     "entry": 75.1
   },
   {
@@ -156,7 +156,7 @@
     "label": "Pullback below 20-day average",
     "s": "ACUTAAS",
     "close": 3196.5,
-    "last": -1.48,
+    "last": -0.93,
     "entry": 3204.1
   },
   {
@@ -166,7 +166,7 @@
     "label": "Pullback below 20-day average",
     "s": "ADANIPORTS",
     "close": 1737.8,
-    "last": 0.76,
+    "last": -1.12,
     "entry": 1769.9
   },
   {
@@ -176,7 +176,7 @@
     "label": "Pullback below 20-day average",
     "s": "AEGISVOPAK",
     "close": 290.75,
-    "last": -1.56,
+    "last": -1.26,
     "entry": 298
   },
   {
@@ -186,7 +186,7 @@
     "label": "Pullback below 20-day average",
     "s": "APLAPOLLO",
     "close": 2115.7,
-    "last": 1.29,
+    "last": 0.49,
     "entry": 2124.6
   },
   {
@@ -196,7 +196,7 @@
     "label": "Pullback below 20-day average",
     "s": "APOLLO",
     "close": 394,
-    "last": 3.17,
+    "last": 4.87,
     "entry": 395.5
   },
   {
@@ -206,7 +206,7 @@
     "label": "Pullback below 20-day average",
     "s": "ARFIN",
     "close": 87.25,
-    "last": 9.56,
+    "last": 17.18,
     "entry": 87.95
   },
   {
@@ -216,7 +216,7 @@
     "label": "Pullback below 20-day average",
     "s": "ARTEMISMED",
     "close": 336.4,
-    "last": -6.15,
+    "last": -6.16,
     "entry": 339.2
   },
   {
@@ -226,7 +226,7 @@
     "label": "Pullback below 20-day average",
     "s": "ASAHIINDIA",
     "close": 944.25,
-    "last": 0.73,
+    "last": 2.76,
     "entry": 950
   },
   {
@@ -236,7 +236,7 @@
     "label": "Pullback below 20-day average",
     "s": "ASKAUTOLTD",
     "close": 618.15,
-    "last": -1.81,
+    "last": 0.89,
     "entry": 621
   },
   {
@@ -246,7 +246,7 @@
     "label": "Pullback below 20-day average",
     "s": "ASTERDM",
     "close": 708.9,
-    "last": -3.29,
+    "last": -3.91,
     "entry": 708
   },
   {
@@ -256,7 +256,7 @@
     "label": "Pullback below 20-day average",
     "s": "AVTNPL",
     "close": 87.85,
-    "last": 2.65,
+    "last": 1.02,
     "entry": 87.85
   },
   {
@@ -266,7 +266,7 @@
     "label": "Pullback below 20-day average",
     "s": "BANDHANBNK",
     "close": 176,
-    "last": -6.73,
+    "last": -7.39,
     "entry": 176
   },
   {
@@ -276,7 +276,7 @@
     "label": "Pullback below 20-day average",
     "s": "BHAGYANGR",
     "close": 402.65,
-    "last": 7.97,
+    "last": 13.35,
     "entry": 401
   },
   {
@@ -286,7 +286,7 @@
     "label": "Pullback below 20-day average",
     "s": "CAPLIPOINT",
     "close": 2631.9,
-    "last": 2.68,
+    "last": 1.51,
     "entry": 2609.7
   },
   {
@@ -296,7 +296,7 @@
     "label": "Pullback below 20-day average",
     "s": "CHENNPETRO",
     "close": 1346.4,
-    "last": 4.44,
+    "last": 19.79,
     "entry": 1345.9
   },
   {
@@ -306,7 +306,7 @@
     "label": "Pullback below 20-day average",
     "s": "CORDSCABLE",
     "close": 318.9,
-    "last": -1.12,
+    "last": -0.6,
     "entry": 317.9
   },
   {
@@ -316,7 +316,7 @@
     "label": "Pullback below 20-day average",
     "s": "DIACABS",
     "close": 345,
-    "last": 5.23,
+    "last": 5.47,
     "entry": 350
   },
   {
@@ -326,7 +326,7 @@
     "label": "Pullback below 20-day average",
     "s": "DIVGIITTS",
     "close": 1136.4,
-    "last": -2.59,
+    "last": -4.87,
     "entry": 1148.9
   },
   {
@@ -336,7 +336,7 @@
     "label": "Pullback below 20-day average",
     "s": "EXICOM",
     "close": 151.1,
-    "last": 2.54,
+    "last": 0.97,
     "entry": 152.3
   },
   {
@@ -346,7 +346,7 @@
     "label": "Pullback below 20-day average",
     "s": "FEDERALBNK",
     "close": 318.2,
-    "last": 0.33,
+    "last": 1.43,
     "entry": 318.95
   },
   {
@@ -356,7 +356,7 @@
     "label": "Pullback below 20-day average",
     "s": "GLAND",
     "close": 2874.4,
-    "last": 4.02,
+    "last": 9.02,
     "entry": 2890
   },
   {
@@ -366,7 +366,7 @@
     "label": "Pullback below 20-day average",
     "s": "GNFC",
     "close": 589.15,
-    "last": 6.7,
+    "last": 4.79,
     "entry": 589.95
   },
   {
@@ -376,7 +376,7 @@
     "label": "Pullback below 20-day average",
     "s": "GOODLUCK",
     "close": 499.35,
-    "last": -1.94,
+    "last": 0.19,
     "entry": 501
   },
   {
@@ -386,7 +386,7 @@
     "label": "Pullback below 20-day average",
     "s": "HSCL",
     "close": 665.15,
-    "last": 0.39,
+    "last": 1.05,
     "entry": 665.95
   },
   {
@@ -396,7 +396,7 @@
     "label": "Pullback below 20-day average",
     "s": "INDOBORAX",
     "close": 469.5,
-    "last": 3.19,
+    "last": 0.91,
     "entry": 476.55
   },
   {
@@ -406,7 +406,7 @@
     "label": "Pullback below 20-day average",
     "s": "IRISDOREME",
     "close": 60.46,
-    "last": -5.73,
+    "last": -4.42,
     "entry": 62
   },
   {
@@ -416,7 +416,7 @@
     "label": "Pullback below 20-day average",
     "s": "JTLIND",
     "close": 86.23,
-    "last": -2.84,
+    "last": 1.38,
     "entry": 87
   },
   {
@@ -426,7 +426,7 @@
     "label": "Pullback below 20-day average",
     "s": "KSL",
     "close": 913,
-    "last": 3.26,
+    "last": 2.15,
     "entry": 913
   },
   {
@@ -436,7 +436,7 @@
     "label": "Pullback below 20-day average",
     "s": "KTKBANK",
     "close": 321.6,
-    "last": -0.23,
+    "last": 0.45,
     "entry": 325
   },
   {
@@ -446,7 +446,7 @@
     "label": "Pullback below 20-day average",
     "s": "LLOYDSME",
     "close": 1776.8,
-    "last": 4.39,
+    "last": 3.62,
     "entry": 1780.1
   },
   {
@@ -456,7 +456,7 @@
     "label": "Pullback below 20-day average",
     "s": "LUMAXTECH",
     "close": 1978.9,
-    "last": -5.02,
+    "last": -5.41,
     "entry": 1955
   },
   {
@@ -466,7 +466,7 @@
     "label": "Pullback below 20-day average",
     "s": "MCX",
     "close": 3204,
-    "last": 2.8,
+    "last": 4.43,
     "entry": 3220
   },
   {
@@ -476,7 +476,7 @@
     "label": "Pullback below 20-day average",
     "s": "MINDACORP",
     "close": 667.35,
-    "last": -0.96,
+    "last": -3.99,
     "entry": 666
   },
   {
@@ -486,7 +486,7 @@
     "label": "Pullback below 20-day average",
     "s": "MOTHERSON",
     "close": 157.03,
-    "last": 1.91,
+    "last": 1.4,
     "entry": 157
   },
   {
@@ -496,7 +496,7 @@
     "label": "Pullback below 20-day average",
     "s": "MUNJALAU",
     "close": 104.07,
-    "last": -0.54,
+    "last": -0.43,
     "entry": 105.9
   },
   {
@@ -506,7 +506,7 @@
     "label": "Pullback below 20-day average",
     "s": "PFOCUS",
     "close": 301.55,
-    "last": -3.4,
+    "last": -6.27,
     "entry": 303
   },
   {
@@ -516,7 +516,7 @@
     "label": "Pullback below 20-day average",
     "s": "PVRINOX",
     "close": 1215.3,
-    "last": 1.02,
+    "last": 8.65,
     "entry": 1236.8
   },
   {
@@ -526,7 +526,7 @@
     "label": "Pullback below 20-day average",
     "s": "RAIN",
     "close": 208.52,
-    "last": 1.72,
+    "last": 4.75,
     "entry": 209.03
   },
   {
@@ -536,7 +536,7 @@
     "label": "Pullback below 20-day average",
     "s": "RATNAMANI",
     "close": 2619.4,
-    "last": -0.69,
+    "last": -3.63,
     "entry": 2619.4
   },
   {
@@ -546,7 +546,7 @@
     "label": "Pullback below 20-day average",
     "s": "SANGHVIMOV",
     "close": 429.5,
-    "last": -2.52,
+    "last": -4.58,
     "entry": 430.35
   },
   {
@@ -556,7 +556,7 @@
     "label": "Pullback below 20-day average",
     "s": "SAREGAMA",
     "close": 494.75,
-    "last": 1.15,
+    "last": 1.16,
     "entry": 497.95
   },
   {
@@ -566,7 +566,7 @@
     "label": "Pullback below 20-day average",
     "s": "SGMART",
     "close": 742.2,
-    "last": -0.95,
+    "last": 0.3,
     "entry": 750
   },
   {
@@ -576,7 +576,7 @@
     "label": "Pullback below 20-day average",
     "s": "SHRIPISTON",
     "close": 4490.5,
-    "last": -3.19,
+    "last": -3.04,
     "entry": 4550
   },
   {
@@ -586,7 +586,7 @@
     "label": "Pullback below 20-day average",
     "s": "SKIPPER",
     "close": 541.2,
-    "last": 1.57,
+    "last": -0.3,
     "entry": 543
   },
   {
@@ -596,7 +596,7 @@
     "label": "Pullback below 20-day average",
     "s": "STEELXIND",
     "close": 11.22,
-    "last": 2.05,
+    "last": -2.94,
     "entry": 11.23
   },
   {
@@ -606,7 +606,7 @@
     "label": "Pullback below 20-day average",
     "s": "STYLAMIND",
     "close": 3219.9,
-    "last": 1.09,
+    "last": 2.56,
     "entry": 3268
   },
   {
@@ -616,7 +616,7 @@
     "label": "Pullback below 20-day average",
     "s": "STYLEBAAZA",
     "close": 368.35,
-    "last": 2.83,
+    "last": 4.05,
     "entry": 365.1
   },
   {
@@ -626,7 +626,7 @@
     "label": "Pullback below 20-day average",
     "s": "TBOTEK",
     "close": 1671.5,
-    "last": 0.5,
+    "last": 1.17,
     "entry": 1684.8
   },
   {
@@ -636,7 +636,7 @@
     "label": "Pullback below 20-day average",
     "s": "TIPSMUSIC",
     "close": 644.2,
-    "last": -0.03,
+    "last": -2.05,
     "entry": 653.3
   },
   {
@@ -646,7 +646,7 @@
     "label": "Pullback below 20-day average",
     "s": "TVSSCS",
     "close": 128.42,
-    "last": 1.83,
+    "last": 1.62,
     "entry": 128.32
   },
   {
@@ -656,7 +656,7 @@
     "label": "Pullback below 20-day average",
     "s": "UNICHEMLAB",
     "close": 535.05,
-    "last": 2.22,
+    "last": 1.86,
     "entry": 536.2
   },
   {
@@ -666,7 +666,7 @@
     "label": "Pullback below 20-day average",
     "s": "VARROC",
     "close": 830.6,
-    "last": -2.46,
+    "last": -1.35,
     "entry": 835
   },
   {
@@ -676,7 +676,7 @@
     "label": "Pullback below 20-day average",
     "s": "VINDHYATEL",
     "close": 2617,
-    "last": 8.35,
+    "last": 7.6,
     "entry": 2611.7
   },
   {
@@ -686,7 +686,7 @@
     "label": "Pullback below 20-day average",
     "s": "VSSL",
     "close": 383.3,
-    "last": 2.3,
+    "last": 3.35,
     "entry": 381
   },
   {
@@ -696,7 +696,7 @@
     "label": "Pullback below 20-day average",
     "s": "WABAG",
     "close": 2004.9,
-    "last": -0.4,
+    "last": -0.83,
     "entry": 2015
   },
   {
@@ -706,7 +706,7 @@
     "label": "Pullback below 20-day average",
     "s": "WELENT",
     "close": 724.45,
-    "last": -0.85,
+    "last": 2.25,
     "entry": 724.45
   },
   {
@@ -716,7 +716,7 @@
     "label": "Pullback below 20-day average",
     "s": "WOCKPHARMA",
     "close": 2083.9,
-    "last": 4.44,
+    "last": 3.19,
     "entry": 2083.9
   },
   {
@@ -726,7 +726,7 @@
     "label": "Pullback below 20-day average",
     "s": "ZYDUSLIFE",
     "close": 1145.7,
-    "last": 1.2,
+    "last": 0.64,
     "entry": 1145.7
   },
   {
@@ -736,7 +736,7 @@
     "label": "Delivery accumulation",
     "s": "AAVAS",
     "close": 1219.5,
-    "last": 0.5,
+    "last": 1.88,
     "entry": 1209
   },
   {
@@ -746,7 +746,7 @@
     "label": "Delivery accumulation",
     "s": "ACCELYA",
     "close": 1105.3,
-    "last": -1.57,
+    "last": -1.34,
     "entry": 1115
   },
   {
@@ -756,7 +756,7 @@
     "label": "Delivery accumulation",
     "s": "BHARTIHEXA",
     "close": 1383.1,
-    "last": 0.27,
+    "last": 6.85,
     "entry": 1383.1
   },
   {
@@ -766,7 +766,7 @@
     "label": "Delivery accumulation",
     "s": "CHOICEIN",
     "close": 726,
-    "last": 0.06,
+    "last": -0.41,
     "entry": 726.7
   },
   {
@@ -776,7 +776,7 @@
     "label": "Delivery accumulation",
     "s": "GRINDWELL",
     "close": 2004.2,
-    "last": 0.49,
+    "last": -0.24,
     "entry": 2023.1
   },
   {
@@ -786,7 +786,7 @@
     "label": "Delivery accumulation",
     "s": "INDIASHLTR",
     "close": 646.6,
-    "last": -0.73,
+    "last": -1.12,
     "entry": 641
   },
   {
@@ -796,7 +796,7 @@
     "label": "Delivery accumulation",
     "s": "ITC",
     "close": 268.9,
-    "last": -0.86,
+    "last": -1.23,
     "entry": 269
   },
   {
@@ -806,7 +806,7 @@
     "label": "Delivery accumulation",
     "s": "KUSUMGAR",
     "close": 602,
-    "last": 1.33,
+    "last": 3.96,
     "entry": 603
   },
   {
@@ -816,7 +816,7 @@
     "label": "Delivery accumulation",
     "s": "MANYAVAR",
     "close": 521.3,
-    "last": -2.05,
+    "last": -3.06,
     "entry": 516
   },
   {
@@ -826,7 +826,7 @@
     "label": "Delivery accumulation",
     "s": "MARUTI",
     "close": 11532,
-    "last": 1.22,
+    "last": -0.3,
     "entry": 11485
   },
   {
@@ -836,7 +836,7 @@
     "label": "Delivery accumulation",
     "s": "MIDWESTLTD",
     "close": 914.75,
-    "last": 8.78,
+    "last": 15.37,
     "entry": 925
   },
   {
@@ -846,7 +846,7 @@
     "label": "Delivery accumulation",
     "s": "ONGC",
     "close": 224.9,
-    "last": -0.36,
+    "last": -1.39,
     "entry": 225
   },
   {
@@ -856,7 +856,7 @@
     "label": "Delivery accumulation",
     "s": "RADICO",
     "close": 4289.1,
-    "last": 3.72,
+    "last": 4.53,
     "entry": 4300
   },
   {
@@ -866,7 +866,7 @@
     "label": "Delivery accumulation",
     "s": "RAJOOENG",
     "close": 54.97,
-    "last": 2.8,
+    "last": 12.58,
     "entry": 55.4
   },
   {
@@ -876,7 +876,7 @@
     "label": "Pullback below 20-day average",
     "s": "ADOR",
     "close": 1512,
-    "last": 1.59,
+    "last": 2.72,
     "entry": 1511
   },
   {
@@ -886,7 +886,7 @@
     "label": "Pullback below 20-day average",
     "s": "AJANTPHARM",
     "close": 3486,
-    "last": 2.33,
+    "last": 2.23,
     "entry": 3492.1
   },
   {
@@ -896,7 +896,7 @@
     "label": "Pullback below 20-day average",
     "s": "AUROPHARMA",
     "close": 1674.9,
-    "last": 1,
+    "last": 0.36,
     "entry": 1676
   },
   {
@@ -906,7 +906,7 @@
     "label": "Pullback below 20-day average",
     "s": "AVALON",
     "close": 2256.3,
-    "last": 4.59,
+    "last": 5.87,
     "entry": 2295
   },
   {
@@ -916,7 +916,7 @@
     "label": "Pullback below 20-day average",
     "s": "AVL",
     "close": 601.05,
-    "last": -1.51,
+    "last": 2.79,
     "entry": 604.25
   },
   {
@@ -926,7 +926,7 @@
     "label": "Pullback below 20-day average",
     "s": "BANKINDIA",
     "close": 133.5,
-    "last": -0.93,
+    "last": 0.11,
     "entry": 133.4
   },
   {
@@ -936,7 +936,7 @@
     "label": "Pullback below 20-day average",
     "s": "BELRISE",
     "close": 231.12,
-    "last": 2.39,
+    "last": 6.49,
     "entry": 231.29
   },
   {
@@ -946,7 +946,7 @@
     "label": "Pullback below 20-day average",
     "s": "DEEDEV",
     "close": 636.95,
-    "last": 0.57,
+    "last": -3.69,
     "entry": 648
   },
   {
@@ -956,7 +956,7 @@
     "label": "Pullback below 20-day average",
     "s": "DIVISLAB",
     "close": 9196,
-    "last": 3.69,
+    "last": 4.1,
     "entry": 9210
   },
   {
@@ -966,7 +966,7 @@
     "label": "Pullback below 20-day average",
     "s": "ETHOSLTD",
     "close": 2602.3,
-    "last": 0.51,
+    "last": 1.03,
     "entry": 2608
   },
   {
@@ -976,7 +976,7 @@
     "label": "Pullback below 20-day average",
     "s": "FEDFINA",
     "close": 149.64,
-    "last": 0.72,
+    "last": -0.73,
     "entry": 149.65
   },
   {
@@ -986,7 +986,7 @@
     "label": "Pullback below 20-day average",
     "s": "GRWRHITECH",
     "close": 6725.5,
-    "last": 4.45,
+    "last": 1.52,
     "entry": 6800
   },
   {
@@ -996,7 +996,7 @@
     "label": "Pullback below 20-day average",
     "s": "INDIANB",
     "close": 810,
-    "last": 0.12,
+    "last": 2.01,
     "entry": 812
   },
   {
@@ -1006,7 +1006,7 @@
     "label": "Pullback below 20-day average",
     "s": "INDNIPPON",
     "close": 1220.3,
-    "last": 0.65,
+    "last": -0.19,
     "entry": 1233.7
   },
   {
@@ -1016,7 +1016,7 @@
     "label": "Pullback below 20-day average",
     "s": "INNOVACAP",
     "close": 1145.4,
-    "last": -0.31,
+    "last": 1.82,
     "entry": 1145.4
   },
   {
@@ -1026,7 +1026,7 @@
     "label": "Pullback below 20-day average",
     "s": "ITDC",
     "close": 664.8,
-    "last": 1.57,
+    "last": 1.05,
     "entry": 664.8
   },
   {
@@ -1036,7 +1036,7 @@
     "label": "Pullback below 20-day average",
     "s": "JKPAPER",
     "close": 385.65,
-    "last": 1.54,
+    "last": -0.77,
     "entry": 387.5
   },
   {
@@ -1046,7 +1046,7 @@
     "label": "Pullback below 20-day average",
     "s": "KAJARIACER",
     "close": 1214.4,
-    "last": -0.34,
+    "last": 0.67,
     "entry": 1218
   },
   {
@@ -1056,7 +1056,7 @@
     "label": "Pullback below 20-day average",
     "s": "KALYANKJIL",
     "close": 556.85,
-    "last": -1.59,
+    "last": 2.15,
     "entry": 557
   },
   {
@@ -1066,7 +1066,7 @@
     "label": "Pullback below 20-day average",
     "s": "M&MFIN",
     "close": 326.2,
-    "last": 0.23,
+    "last": -1.61,
     "entry": 327
   },
   {
@@ -1076,7 +1076,7 @@
     "label": "Pullback below 20-day average",
     "s": "MAHLOG",
     "close": 406.75,
-    "last": 2.86,
+    "last": 1.9,
     "entry": 403.5
   },
   {
@@ -1086,7 +1086,7 @@
     "label": "Pullback below 20-day average",
     "s": "MAHSEAMLES",
     "close": 685.05,
-    "last": -0.06,
+    "last": 0.97,
     "entry": 686.1
   },
   {
@@ -1096,7 +1096,7 @@
     "label": "Pullback below 20-day average",
     "s": "NEOGEN",
     "close": 2311.2,
-    "last": 4.75,
+    "last": 4.84,
     "entry": 2319
   },
   {
@@ -1106,7 +1106,7 @@
     "label": "Pullback below 20-day average",
     "s": "PNB",
     "close": 112.35,
-    "last": -0.39,
+    "last": 1.98,
     "entry": 112.36
   },
   {
@@ -1116,7 +1116,7 @@
     "label": "Pullback below 20-day average",
     "s": "PRIVISCL",
     "close": 3442.2,
-    "last": 2.17,
+    "last": 2.59,
     "entry": 3430.3
   },
   {
@@ -1126,7 +1126,7 @@
     "label": "Pullback below 20-day average",
     "s": "SAKAR",
     "close": 1006.8,
-    "last": 3.5,
+    "last": 0.7,
     "entry": 1013
   },
   {
@@ -1136,7 +1136,7 @@
     "label": "Pullback below 20-day average",
     "s": "SATIN",
     "close": 216.29,
-    "last": 5.64,
+    "last": 3.53,
     "entry": 216.15
   },
   {
@@ -1146,7 +1146,7 @@
     "label": "Pullback below 20-day average",
     "s": "SOLARA",
     "close": 676.9,
-    "last": 0.1,
+    "last": 0.25,
     "entry": 682
   },
   {
@@ -1156,7 +1156,7 @@
     "label": "Pullback below 20-day average",
     "s": "SONACOMS",
     "close": 797,
-    "last": 2.54,
+    "last": 1.35,
     "entry": 799.7
   },
   {
@@ -1166,7 +1166,7 @@
     "label": "Pullback below 20-day average",
     "s": "SUPRIYA",
     "close": 899.55,
-    "last": 1.71,
+    "last": -1.19,
     "entry": 900
   },
   {
@@ -1176,7 +1176,7 @@
     "label": "Pullback below 20-day average",
     "s": "TITAN",
     "close": 4580,
-    "last": -1.08,
+    "last": -4.85,
     "entry": 4599.9
   },
   {
@@ -1186,7 +1186,7 @@
     "label": "Pullback below 20-day average",
     "s": "UNITDSPR",
     "close": 1369,
-    "last": -0.51,
+    "last": -1.54,
     "entry": 1365
   },
   {
@@ -1196,7 +1196,7 @@
     "label": "Pullback below 20-day average",
     "s": "WELCORP",
     "close": 2497.5,
-    "last": 5.25,
+    "last": 6.98,
     "entry": 2528.2
   },
   {
@@ -1206,7 +1206,7 @@
     "label": "Pullback below 20-day average",
     "s": "WINDLAS",
     "close": 1017.9,
-    "last": 2.8,
+    "last": 1.39,
     "entry": 1008
   },
   {
@@ -1216,7 +1216,7 @@
     "label": "Pullback below 20-day average",
     "s": "YATHARTH",
     "close": 1003,
-    "last": 5.56,
+    "last": 2.96,
     "entry": 1003
   },
   {
@@ -1226,7 +1226,8 @@
     "label": "Delivery accumulation",
     "s": "AAATECH",
     "close": 103.53,
-    "last": 0
+    "last": 3.17,
+    "entry": 103.51
   },
   {
     "id": "20261006|delivery|ABCAPITAL",
@@ -1235,7 +1236,8 @@
     "label": "Delivery accumulation",
     "s": "ABCAPITAL",
     "close": 378.9,
-    "last": 0
+    "last": -1.43,
+    "entry": 377.5
   },
   {
     "id": "20261006|delivery|CUMMINSIND",
@@ -1244,7 +1246,8 @@
     "label": "Delivery accumulation",
     "s": "CUMMINSIND",
     "close": 4919,
-    "last": 0
+    "last": -1.07,
+    "entry": 4925
   },
   {
     "id": "20261006|delivery|DHANUKA",
@@ -1253,7 +1256,8 @@
     "label": "Delivery accumulation",
     "s": "DHANUKA",
     "close": 909.55,
-    "last": 0
+    "last": -2,
+    "entry": 910
   },
   {
     "id": "20261006|delivery|EFCIL",
@@ -1262,7 +1266,8 @@
     "label": "Delivery accumulation",
     "s": "EFCIL",
     "close": 170.1,
-    "last": 0
+    "last": 1.49,
+    "entry": 171.24
   },
   {
     "id": "20261006|delivery|EMPOWER",
@@ -1271,7 +1276,8 @@
     "label": "Delivery accumulation",
     "s": "EMPOWER",
     "close": 1.68,
-    "last": 0
+    "last": 3.53,
+    "entry": 1.7
   },
   {
     "id": "20261006|delivery|ETHOSLTD",
@@ -1280,7 +1286,8 @@
     "label": "Delivery accumulation",
     "s": "ETHOSLTD",
     "close": 2621.2,
-    "last": 0
+    "last": 0.33,
+    "entry": 2626.1
   },
   {
     "id": "20261006|delivery|HAZOOR",
@@ -1289,7 +1296,8 @@
     "label": "Delivery accumulation",
     "s": "HAZOOR",
     "close": 18,
-    "last": 0
+    "last": 2.71,
+    "entry": 18.09
   },
   {
     "id": "20261006|delivery|JSWENERGY",
@@ -1298,7 +1306,8 @@
     "label": "Delivery accumulation",
     "s": "JSWENERGY",
     "close": 494.9,
-    "last": 0
+    "last": -1.91,
+    "entry": 494.9
   },
   {
     "id": "20261006|delivery|KIRLPNU",
@@ -1307,7 +1316,8 @@
     "label": "Delivery accumulation",
     "s": "KIRLPNU",
     "close": 710.85,
-    "last": 0
+    "last": -2.42,
+    "entry": 713.4
   },
   {
     "id": "20261006|delivery|KOTAKBANK",
@@ -1316,7 +1326,8 @@
     "label": "Delivery accumulation",
     "s": "KOTAKBANK",
     "close": 431.9,
-    "last": 0
+    "last": 1.84,
+    "entry": 432.05
   },
   {
     "id": "20261006|delivery|LUPIN",
@@ -1325,7 +1336,8 @@
     "label": "Delivery accumulation",
     "s": "LUPIN",
     "close": 2029.3,
-    "last": 0
+    "last": -0.81,
+    "entry": 2029.3
   },
   {
     "id": "20261006|delivery|MAYURUNIQ",
@@ -1334,7 +1346,8 @@
     "label": "Delivery accumulation",
     "s": "MAYURUNIQ",
     "close": 761.15,
-    "last": 0
+    "last": 0.25,
+    "entry": 760.95
   },
   {
     "id": "20261006|delivery|MFSL",
@@ -1343,7 +1356,8 @@
     "label": "Delivery accumulation",
     "s": "MFSL",
     "close": 1361,
-    "last": 0
+    "last": -0.79,
+    "entry": 1355.8
   },
   {
     "id": "20261006|delivery|PETRONET",
@@ -1352,7 +1366,8 @@
     "label": "Delivery accumulation",
     "s": "PETRONET",
     "close": 297.5,
-    "last": 0
+    "last": 0.68,
+    "entry": 295
   },
   {
     "id": "20261006|delivery|PIIND",
@@ -1361,7 +1376,8 @@
     "label": "Delivery accumulation",
     "s": "PIIND",
     "close": 2250,
-    "last": 0
+    "last": -2.17,
+    "entry": 2259
   },
   {
     "id": "20261006|delivery|RMC",
@@ -1370,7 +1386,8 @@
     "label": "Delivery accumulation",
     "s": "RMC",
     "close": 196.05,
-    "last": 0
+    "last": -0.8,
+    "entry": 198
   },
   {
     "id": "20261006|delivery|SEIL",
@@ -1379,7 +1396,8 @@
     "label": "Delivery accumulation",
     "s": "SEIL",
     "close": 186.16,
-    "last": 0
+    "last": -0.76,
+    "entry": 187.41
   },
   {
     "id": "20261006|delivery|SMARTWORKS",
@@ -1388,7 +1406,8 @@
     "label": "Delivery accumulation",
     "s": "SMARTWORKS",
     "close": 503.9,
-    "last": 0
+    "last": -3.66,
+    "entry": 507.95
   },
   {
     "id": "20261006|delivery|STARHEALTH",
@@ -1397,7 +1416,8 @@
     "label": "Delivery accumulation",
     "s": "STARHEALTH",
     "close": 550.55,
-    "last": 0
+    "last": 0.34,
+    "entry": 552
   },
   {
     "id": "20261006|delivery|STYL",
@@ -1406,7 +1426,8 @@
     "label": "Delivery accumulation",
     "s": "STYL",
     "close": 369.7,
-    "last": 0
+    "last": 1.52,
+    "entry": 364.15
   },
   {
     "id": "20261006|delivery|TATAPOWER",
@@ -1415,7 +1436,8 @@
     "label": "Delivery accumulation",
     "s": "TATAPOWER",
     "close": 351.65,
-    "last": 0
+    "last": -1.64,
+    "entry": 350.9
   },
   {
     "id": "20261006|delivery|VIDYAWIRES",
@@ -1424,7 +1446,8 @@
     "label": "Delivery accumulation",
     "s": "VIDYAWIRES",
     "close": 95.83,
-    "last": 0
+    "last": 3.84,
+    "entry": 96.9
   },
   {
     "id": "20261006|delivery|VOLTAS",
@@ -1433,7 +1456,8 @@
     "label": "Delivery accumulation",
     "s": "VOLTAS",
     "close": 1067.9,
-    "last": 0
+    "last": -1.41,
+    "entry": 1071.9
   },
   {
     "id": "20261006|breakout-delivery|TATVA",
@@ -1442,7 +1466,8 @@
     "label": "52-week breakout with delivery",
     "s": "TATVA",
     "close": 1877.4,
-    "last": 0
+    "last": 5.9,
+    "entry": 1880.2
   },
   {
     "id": "20261006|breakout-delivery|VALIANTORG",
@@ -1451,7 +1476,8 @@
     "label": "52-week breakout with delivery",
     "s": "VALIANTORG",
     "close": 496.8,
-    "last": 0
+    "last": -3.41,
+    "entry": 496.8
   },
   {
     "id": "20261006|pullback-20dma|ABSLAMC",
@@ -1460,7 +1486,8 @@
     "label": "Pullback below 20-day average",
     "s": "ABSLAMC",
     "close": 1009.65,
-    "last": 0
+    "last": 0.58,
+    "entry": 1009.65
   },
   {
     "id": "20261006|pullback-20dma|ALLCARGO",
@@ -1469,7 +1496,8 @@
     "label": "Pullback below 20-day average",
     "s": "ALLCARGO",
     "close": 10.5,
-    "last": 0
+    "last": -2.1,
+    "entry": 10.5
   },
   {
     "id": "20261006|pullback-20dma|ASIANPAINT",
@@ -1478,7 +1506,8 @@
     "label": "Pullback below 20-day average",
     "s": "ASIANPAINT",
     "close": 2424.2,
-    "last": 0
+    "last": 0.01,
+    "entry": 2371.8
   },
   {
     "id": "20261006|pullback-20dma|ASTRAL",
@@ -1487,7 +1516,8 @@
     "label": "Pullback below 20-day average",
     "s": "ASTRAL",
     "close": 1402.3,
-    "last": 0
+    "last": 1.88,
+    "entry": 1401.3
   },
   {
     "id": "20261006|pullback-20dma|CHOLAFIN",
@@ -1496,7 +1526,8 @@
     "label": "Pullback below 20-day average",
     "s": "CHOLAFIN",
     "close": 1611,
-    "last": 0
+    "last": -2.64,
+    "entry": 1607.1
   },
   {
     "id": "20261006|pullback-20dma|COALINDIA",
@@ -1505,7 +1536,8 @@
     "label": "Pullback below 20-day average",
     "s": "COALINDIA",
     "close": 411.65,
-    "last": 0
+    "last": 0.69,
+    "entry": 411.65
   },
   {
     "id": "20261006|pullback-20dma|CUB",
@@ -1514,7 +1546,8 @@
     "label": "Pullback below 20-day average",
     "s": "CUB",
     "close": 223.75,
-    "last": 0
+    "last": -0.84,
+    "entry": 224
   },
   {
     "id": "20261006|pullback-20dma|EMCURE",
@@ -1523,7 +1556,8 @@
     "label": "Pullback below 20-day average",
     "s": "EMCURE",
     "close": 1922.4,
-    "last": 0
+    "last": 0.21,
+    "entry": 1913.9
   },
   {
     "id": "20261006|pullback-20dma|FIVESTAR",
@@ -1532,7 +1566,8 @@
     "label": "Pullback below 20-day average",
     "s": "FIVESTAR",
     "close": 514.35,
-    "last": 0
+    "last": -1.02,
+    "entry": 514.6
   },
   {
     "id": "20261006|pullback-20dma|GAIL",
@@ -1541,7 +1576,8 @@
     "label": "Pullback below 20-day average",
     "s": "GAIL",
     "close": 172.08,
-    "last": 0
+    "last": -0.18,
+    "entry": 171.01
   },
   {
     "id": "20261006|pullback-20dma|GENUSPOWER",
@@ -1550,7 +1586,8 @@
     "label": "Pullback below 20-day average",
     "s": "GENUSPOWER",
     "close": 307.2,
-    "last": 0
+    "last": -0.97,
+    "entry": 304
   },
   {
     "id": "20261006|pullback-20dma|GLAXO",
@@ -1559,7 +1596,8 @@
     "label": "Pullback below 20-day average",
     "s": "GLAXO",
     "close": 2755,
-    "last": 0
+    "last": -4.57,
+    "entry": 2760
   },
   {
     "id": "20261006|pullback-20dma|GOCLCORP",
@@ -1568,7 +1606,8 @@
     "label": "Pullback below 20-day average",
     "s": "GOCLCORP",
     "close": 372.45,
-    "last": 0
+    "last": -1.63,
+    "entry": 373.95
   },
   {
     "id": "20261006|pullback-20dma|GOKULAGRO",
@@ -1577,7 +1616,8 @@
     "label": "Pullback below 20-day average",
     "s": "GOKULAGRO",
     "close": 210.95,
-    "last": 0
+    "last": 0.98,
+    "entry": 210.35
   },
   {
     "id": "20261006|pullback-20dma|HUHTAMAKI",
@@ -1586,7 +1626,8 @@
     "label": "Pullback below 20-day average",
     "s": "HUHTAMAKI",
     "close": 233.45,
-    "last": 0
+    "last": -0.97,
+    "entry": 233.45
   },
   {
     "id": "20261006|pullback-20dma|IMFA",
@@ -1595,7 +1636,8 @@
     "label": "Pullback below 20-day average",
     "s": "IMFA",
     "close": 1190.6,
-    "last": 0
+    "last": 0.23,
+    "entry": 1184.1
   },
   {
     "id": "20261006|pullback-20dma|INOXINDIA",
@@ -1604,7 +1646,8 @@
     "label": "Pullback below 20-day average",
     "s": "INOXINDIA",
     "close": 2077.3,
-    "last": 0
+    "last": 0.58,
+    "entry": 2070
   },
   {
     "id": "20261006|pullback-20dma|IONEXCHANG",
@@ -1613,7 +1656,8 @@
     "label": "Pullback below 20-day average",
     "s": "IONEXCHANG",
     "close": 409.2,
-    "last": 0
+    "last": -2.09,
+    "entry": 411
   },
   {
     "id": "20261006|pullback-20dma|KEI",
@@ -1622,7 +1666,8 @@
     "label": "Pullback below 20-day average",
     "s": "KEI",
     "close": 4557.4,
-    "last": 0
+    "last": 2.58,
+    "entry": 4560.2
   },
   {
     "id": "20261006|pullback-20dma|KPRMILL",
@@ -1631,7 +1676,8 @@
     "label": "Pullback below 20-day average",
     "s": "KPRMILL",
     "close": 1100.4,
-    "last": 0
+    "last": 0.03,
+    "entry": 1101
   },
   {
     "id": "20261006|pullback-20dma|KTKBANK",
@@ -1640,7 +1686,8 @@
     "label": "Pullback below 20-day average",
     "s": "KTKBANK",
     "close": 324.25,
-    "last": 0
+    "last": 0.79,
+    "entry": 323.9
   },
   {
     "id": "20261006|pullback-20dma|LUPIN",
@@ -1649,7 +1696,8 @@
     "label": "Pullback below 20-day average",
     "s": "LUPIN",
     "close": 2029.3,
-    "last": 0
+    "last": -0.81,
+    "entry": 2029.3
   },
   {
     "id": "20261006|pullback-20dma|MARKSANS",
@@ -1658,7 +1706,8 @@
     "label": "Pullback below 20-day average",
     "s": "MARKSANS",
     "close": 324.4,
-    "last": 0
+    "last": -0.11,
+    "entry": 325.8
   },
   {
     "id": "20261006|pullback-20dma|NELCO",
@@ -1667,7 +1716,8 @@
     "label": "Pullback below 20-day average",
     "s": "NELCO",
     "close": 924.15,
-    "last": 0
+    "last": -0.36,
+    "entry": 919.1
   },
   {
     "id": "20261006|pullback-20dma|NESTLEIND",
@@ -1676,7 +1726,8 @@
     "label": "Pullback below 20-day average",
     "s": "NESTLEIND",
     "close": 1341.4,
-    "last": 0
+    "last": -0.17,
+    "entry": 1326.3
   },
   {
     "id": "20261006|pullback-20dma|PHOENIXLTD",
@@ -1685,7 +1736,8 @@
     "label": "Pullback below 20-day average",
     "s": "PHOENIXLTD",
     "close": 1883.5,
-    "last": 0
+    "last": -0.83,
+    "entry": 1861
   },
   {
     "id": "20261006|pullback-20dma|PIDILITIND",
@@ -1694,7 +1746,8 @@
     "label": "Pullback below 20-day average",
     "s": "PIDILITIND",
     "close": 1520.5,
-    "last": 0
+    "last": -1.75,
+    "entry": 1515
   },
   {
     "id": "20261006|pullback-20dma|PPLPHARMA",
@@ -1703,7 +1756,8 @@
     "label": "Pullback below 20-day average",
     "s": "PPLPHARMA",
     "close": 200.52,
-    "last": 0
+    "last": 1.47,
+    "entry": 200.06
   },
   {
     "id": "20261006|pullback-20dma|SAGILITY",
@@ -1712,7 +1766,8 @@
     "label": "Pullback below 20-day average",
     "s": "SAGILITY",
     "close": 43.88,
-    "last": 0
+    "last": -1.75,
+    "entry": 43.88
   },
   {
     "id": "20261006|pullback-20dma|STYLAMIND",
@@ -1721,7 +1776,8 @@
     "label": "Pullback below 20-day average",
     "s": "STYLAMIND",
     "close": 3303.5,
-    "last": 0
+    "last": 1.46,
+    "entry": 3303.5
   },
   {
     "id": "20261006|pullback-20dma|TMB",
@@ -1730,7 +1786,8 @@
     "label": "Pullback below 20-day average",
     "s": "TMB",
     "close": 878.95,
-    "last": 0
+    "last": -0.18,
+    "entry": 878.95
   },
   {
     "id": "20261006|pullback-20dma|TORNTPOWER",
@@ -1739,7 +1796,8 @@
     "label": "Pullback below 20-day average",
     "s": "TORNTPOWER",
     "close": 1234.9,
-    "last": 0
+    "last": -0.19,
+    "entry": 1238.9
   },
   {
     "id": "20261006|pullback-20dma|VERANDA",
@@ -1748,7 +1806,8 @@
     "label": "Pullback below 20-day average",
     "s": "VERANDA",
     "close": 29.72,
-    "last": 0
+    "last": 0.68,
+    "entry": 30.99
   },
   {
     "id": "20261006|pullback-20dma|WALCHANNAG",
@@ -1757,6 +1816,475 @@
     "label": "Pullback below 20-day average",
     "s": "WALCHANNAG",
     "close": 204.17,
+    "last": 10.34,
+    "entry": 203
+  },
+  {
+    "id": "20261007|delivery|AAREYDRUGS",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "AAREYDRUGS",
+    "close": 108.81,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|ABLBL",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "ABLBL",
+    "close": 73.69,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|ACCELYA",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "ACCELYA",
+    "close": 1100.1,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|AUTOAXLES",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "AUTOAXLES",
+    "close": 1651.4,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|BHARTIARTL",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "BHARTIARTL",
+    "close": 1833.9,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|CAPITALSFB",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "CAPITALSFB",
+    "close": 274.2,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|DHARMAJ",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "DHARMAJ",
+    "close": 267.35,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|GYFTR",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "GYFTR",
+    "close": 169.52,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|KANSAINER",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "KANSAINER",
+    "close": 192.4,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|LAXMIDENTL",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "LAXMIDENTL",
+    "close": 197.12,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|ORIENTBELL",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "ORIENTBELL",
+    "close": 432.55,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|RELTD",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "RELTD",
+    "close": 148.58,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|SHREEJISPG",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "SHREEJISPG",
+    "close": 802.1,
+    "last": 0
+  },
+  {
+    "id": "20261007|delivery|WONDERLA",
+    "date": 20261007,
+    "screen": "delivery",
+    "label": "Delivery accumulation",
+    "s": "WONDERLA",
+    "close": 519.6,
+    "last": 0
+  },
+  {
+    "id": "20261007|breakout-delivery|AAREYDRUGS",
+    "date": 20261007,
+    "screen": "breakout-delivery",
+    "label": "52-week breakout with delivery",
+    "s": "AAREYDRUGS",
+    "close": 108.81,
+    "last": 0
+  },
+  {
+    "id": "20261007|breakout-delivery|CPCAP",
+    "date": 20261007,
+    "screen": "breakout-delivery",
+    "label": "52-week breakout with delivery",
+    "s": "CPCAP",
+    "close": 155.22,
+    "last": 0
+  },
+  {
+    "id": "20261007|breakout-delivery|ORIENTBELL",
+    "date": 20261007,
+    "screen": "breakout-delivery",
+    "label": "52-week breakout with delivery",
+    "s": "ORIENTBELL",
+    "close": 432.55,
+    "last": 0
+  },
+  {
+    "id": "20261007|breakout-delivery|SHREEJISPG",
+    "date": 20261007,
+    "screen": "breakout-delivery",
+    "label": "52-week breakout with delivery",
+    "s": "SHREEJISPG",
+    "close": 802.1,
+    "last": 0
+  },
+  {
+    "id": "20261007|breakout-delivery|TBOTEK",
+    "date": 20261007,
+    "screen": "breakout-delivery",
+    "label": "52-week breakout with delivery",
+    "s": "TBOTEK",
+    "close": 1704.5,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|ABB",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ABB",
+    "close": 7005,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|ADANIPORTS",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ADANIPORTS",
+    "close": 1750.1,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|ANTHEM",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ANTHEM",
+    "close": 887.05,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|APCOTEXIND",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "APCOTEXIND",
+    "close": 592.7,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|AVANTIFEED",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "AVANTIFEED",
+    "close": 722.3,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|BALAMINES",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "BALAMINES",
+    "close": 2155.9,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|BLSE",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "BLSE",
+    "close": 158.2,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|CENTUM",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "CENTUM",
+    "close": 4345.9,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|DREDGECORP",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "DREDGECORP",
+    "close": 931,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|EDELWEISS",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "EDELWEISS",
+    "close": 133.8,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|ENTERO",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ENTERO",
+    "close": 1713.3,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|FORCEMOT",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "FORCEMOT",
+    "close": 16956,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|HAL",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "HAL",
+    "close": 4746.3,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|HINDOILEXP",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "HINDOILEXP",
+    "close": 171.88,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|IPCALAB",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "IPCALAB",
+    "close": 1938.5,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|JUBLINGREA",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "JUBLINGREA",
+    "close": 642.55,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|KIRLPNU",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "KIRLPNU",
+    "close": 696.15,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|KSL",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "KSL",
+    "close": 932.65,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|LTFOODS",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "LTFOODS",
+    "close": 418.2,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|MAXESTATES",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "MAXESTATES",
+    "close": 550.5,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|NATCOPHARM",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "NATCOPHARM",
+    "close": 810.1,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|NETWEB",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "NETWEB",
+    "close": 4685.4,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|PITTIENG",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "PITTIENG",
+    "close": 1118.4,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|SIEMENS",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SIEMENS",
+    "close": 3793,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|SKIPPER",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SKIPPER",
+    "close": 541.35,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|SOUTHWEST",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SOUTHWEST",
+    "close": 193.95,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|STEELXIND",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "STEELXIND",
+    "close": 10.9,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|SUNDARMFIN",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SUNDARMFIN",
+    "close": 4301.2,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|SUPRIYA",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "SUPRIYA",
+    "close": 889.25,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|UJJIVANSFB",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "UJJIVANSFB",
+    "close": 64.94,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|VEDL",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "VEDL",
+    "close": 261.4,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|XPROINDIA",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "XPROINDIA",
+    "close": 1130,
+    "last": 0
+  },
+  {
+    "id": "20261007|pullback-20dma|ZYDUSLIFE",
+    "date": 20261007,
+    "screen": "pullback-20dma",
+    "label": "Pullback below 20-day average",
+    "s": "ZYDUSLIFE",
+    "close": 1153,
     "last": 0
   }
 ]
