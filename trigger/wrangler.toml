@@ -1,0 +1,18 @@
+# A timer that starts the evening update on time. GitHub's own scheduler runs
+# hours late; this calls GitHub at the stated minute.
+#
+#   cd trigger
+#   npx wrangler deploy
+#   npx wrangler secret put GITHUB_TOKEN   # fine-grained token: this repo only, Actions read and write
+name = "sensa-evening-trigger"
+main = "worker.js"
+compatibility_date = "2026-09-01"
+workers_dev = false
+
+[vars]
+REPO = "ddaso-msi/nse-screener"
+WORKFLOW = "brief.yml"
+
+[triggers]
+# UTC. 19:30 IST once NSE has published; 22:00 IST in case it was late. Mon-Fri.
+crons = ["0 14 * * MON-FRI", "30 16 * * MON-FRI"]

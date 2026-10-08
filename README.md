@@ -43,6 +43,8 @@ scripts/schedule.sh uninstall
 - **Secrets**: `APP_PASSWORD` on the Pages project; `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` in the GitHub repo. Until the GitHub secrets exist the workflow skips publishing.
 - **Local test of the hosted build**: `npm run build && npx wrangler pages dev dist --kv USER` with `APP_PASSWORD` in `.dev.vars`. The local dev app (`npm run dev`) has no sign-in and a single user, stored in `data/user/`.
 
+**Timing.** GitHub starts its own scheduled runs hours late, so the evening runs are started by a small Cloudflare Worker on a timer (`trigger/`, deployed as `sensa-evening-trigger`): 19:30 and 22:00 IST, Monday to Friday. It calls GitHub's API with a fine-grained token stored as the Worker secret `GITHUB_TOKEN` (this repository only; Actions: read and write). The workflow keeps one late scheduled run as a fallback.
+
 ## ETFs tab
 
 349 exchange-traded funds listed on NSE, kept apart from the stocks (they are not in the Screener, the market statistics or the backtests) but usable everywhere else: search, the stock panel, the Chart tab, the watchlist and paper trading.

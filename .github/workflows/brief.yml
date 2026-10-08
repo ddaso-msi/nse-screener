@@ -8,9 +8,10 @@ name: Evening brief
 
 on:
   schedule:
-    # 19:30 IST, after NSE publishes; 22:00 IST catches a late publication. Mon-Fri.
-    - cron: "0 14 * * 1-5"
-    - cron: "30 16 * * 1-5"
+    # A fallback only. GitHub starts scheduled runs hours late, so the evening
+    # runs (19:30 and 22:00 IST) are started on time by the Cloudflare timer in
+    # trigger/, through workflow_dispatch.
+    - cron: "30 18 * * 1-5"
   workflow_dispatch:
 
 permissions:
