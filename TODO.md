@@ -28,6 +28,10 @@ Ordered by what to do first. Tick items off as they land.
   - NSE Data & Analytics domestic tariff effective 1 Apr 2026 (fixed fees per year, per site/medium, before taxes): end-of-day data ₹1,00,000 for the cash market and ₹1,00,000 for F&O; end-of-day corporate data ₹5,00,000; historical trade data ₹1,10,000 per segment; master data ₹2,15,000. Enquiries: marketdata@nse.co.in. Vendor prices not found.
 - [ ] **Decide what to do about the licence finding** (Deb's call): keep it private and small, ask NSE for permission/licence, or move to a licensed vendor. Own domain and wider sharing wait on this.
 
+- [x] **Macro backdrop from Polymarket.** _(2026-10-08: six lines in the brief — next two Fed decisions, US recession odds, oil, two conflict risks. A full Odds tab with paper bets was built first and cut back the same day as mostly noise. Not pushed yet. Polymarket's terms of service unread: its site doesn't open from Deb's connection.)_
+
+- [x] **More information on the site.** _(2026-10-08: ownership (deals, promoter and large-holder disclosures, promoter holding and pledges), peer comparison, FII/DII flows, index valuation, results tracker. Not pushed yet.)_
+
 ## Not planned
 
 - Mutual funds (outside the app's audience).

@@ -79,6 +79,24 @@ An end-of-day options workspace for every F&O underlying (indices and stocks): t
 - Maths (`src/optionMath.ts`): Black-Scholes on the forward the chain implies through put-call parity, 6.5% rate. Payoff at expiry and on any earlier day, max profit and loss, breakevens, net delta/theta/vega, and a model "chance of profit" from the at-the-money IV.
 - Not modelled: margin, brokerage and taxes, liquidity, early exercise, mixed expiries. Prices are settlement prices, not tradable quotes.
 
+## Ownership, flows, valuation and results tracker
+
+Added 2026-10-08, all from official feeds on `www.nseindia.com/api` (the listings host, not the rate-limited archive):
+
+- **Ownership** (`scripts/holders.mjs`, kept in `data/raw/holders/state.json`): a year of bulk and block deals, a year of share purchases and sales disclosed by promoters and large holders (SAST regulation 29), promoter holding at each shareholding filing (up to eight per company) and the pledged share of it. Shown on the stock panel, as Screener filters (promoter holding, its change, pledged %) and, for the latest session, as "Large trades" in the brief. These filters cannot be backtested. NSE's insider-trading (PIT) listing returned nothing after about April 2026, so it is not used.
+- **Peers**: on the stock panel, the six companies of the same sector closest in market cap, with the sector median. Built in the browser from the screener rows.
+- **Institutional flows**: the day's net FII and DII buying in the cash market. NSE publishes only the latest day, so Sensa keeps its own record in `data/user/flows.json` (committed by the evening job); the trend fills in from the day this was added.
+- **Index valuation**: P/E, P/B and dividend yield of five Nifty indices from the daily index file, with where today's P/E sits within the days Sensa has (about three years).
+- **Results tracker** (News tab): companies whose latest results were filed in the last 21 days, with year-on-year growth and the stock's move on the first session that could react. The results downloader now reads the two newest quarters first, then the same quarters a year earlier.
+
+The brief panels and tracker read `public/data/pulse.json`, written by `sync()`.
+
+## Macro backdrop (prediction markets)
+
+A small table in the brief: what prediction markets expect on the outside events that matter most to Indian stocks. `scripts/odds.mjs` (run by the evening update) takes one snapshot from Polymarket's public Gamma API (`gamma-api.polymarket.com`, no key) and writes `public/data/odds.json` with at most six lines: the likeliest outcome of the next two US Fed decisions, US recession odds, the oil price level traders are least sure about, and the two most traded conflict questions. Questions with under $5,000 traded in a day are left out.
+
+It is background, not a signal: one snapshot an evening of a market that trades all day. A fuller version (a tab of 42 questions with paper bets) was built and cut back on 2026-10-08 because most of it was noise. Polymarket's own site and terms of service could not be opened from this connection, so its terms on showing its data have not been read. If Polymarket can't be reached, the previous snapshot stays.
+
 ## Backtest
 
 ```bash

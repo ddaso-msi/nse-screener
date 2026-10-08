@@ -13,6 +13,8 @@ import { fetchEtfData, loadEtfData, loadEtfList } from './etf.mjs';
 import { fetchExtras, fundamentalSeries, loadFundamentals } from './fundamentals.mjs';
 import { fetchResults, loadResults, resultsSeries } from './results.mjs';
 import { buildNews, fetchFilings, loadFilings } from './news.mjs';
+import { buildOdds } from './odds.mjs';
+import { fetchHolders, loadHolders } from './holders.mjs';
 import { detectPatterns } from './patterns.mjs';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
@@ -325,6 +327,7 @@ export function rankTo99(items) {
 }
 
 const r1 = (x) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 10) / 10);
+const dayCount = (d) => Date.UTC(Math.floor(d / 10000), (Math.floor(d / 100) % 100) - 1, d % 100) / 864e5;
 const r2 = (x) => (x == null || !Number.isFinite(x) ? null : Math.round(x * 100) / 100);
 const pct = (a, b) => (a == null || b == null || b === 0 ? null : (a / b - 1) * 100);
 
@@ -409,6 +412,10 @@ export async function sync({ log = console.log } = {}) {
   log('Fetching quarterly results…');
   await fetchResults(log, new Set(names.keys()));
   const results = await loadResults();
+  log('Fetching deals, disclosures and holdings…');
+  await fetchHolders(log);
+  const holders = await loadHolders(names);
+  const reported = []; // results filed in the last three weeks, for the results tracker
 
   log('Computing metrics…');
   const { bySymbol, dates } = await loadHistory(files);
@@ -432,6 +439,21 @@ export async function sync({ log = console.log } = {}) {
     const rs = resultsSeries(symbol, bars, results);
     const res = results.get(symbol);
     const fin = Number.isNaN(rs.opm[at]) && Number.isNaN(rs.roe[at]) && Number.isNaN(rs.revYoY[at]) ? null : res;
+    const own = holders.of(symbol);
+    const deals = (holders.deals.get(symbol) ?? []).slice(0, 10).map(({ s, ...d }) => d);
+    const sast = (holders.sast.get(symbol) ?? []).slice(0, 10).map(({ s, id, ...d }) => d);
+    const lastQ = res?.quarters[res.quarters.length - 1];
+    if (lastQ && dayCount(latest) - dayCount(lastQ.at) <= 21) {
+      const yearAgo = res.quarters.find((x) => x.q === lastQ.q - 10000);
+      // the first session that could react: the filing day itself, or the next one if it came after the close
+      const i = bars.findIndex((b) => (lastQ.late ? b.date > lastQ.at : b.date >= lastQ.at));
+      reported.push({
+        s: symbol, q: lastQ.q, at: lastQ.at, rev: lastQ.rev, pat: lastQ.own,
+        revYoY: yearAgo?.rev > 0 ? r1((lastQ.rev / yearAgo.rev - 1) * 100) : null,
+        patYoY: yearAgo?.own > 0 ? r1((lastQ.own / yearAgo.own - 1) * 100) : null,
+        move: i > 0 ? r1((bars[i].c / bars[i - 1].c - 1) * 100) : null,
+      });
+    }
     const ds = derivativeSeries(symbol, bars, deriv);
     const inFo = ds.any && deriv.days.get(latest)?.stocks[symbol] != null;
     const filed = filings.get(symbol);
@@ -456,6 +478,10 @@ export async function sync({ log = console.log } = {}) {
       opm: r1(rs.opm[at]),
       roe: r1(rs.roe[at]),
       de: r2(rs.de[at]),
+      // ownership: promoter holding, its change since the previous filing, and the share of it pledged
+      prom: own.promPct,
+      promChg: own.promChg,
+      pledge: own.pledge,
       nextEx: acts.find((a) => a.ex > latest) ?? null,
       // derivatives (F&O stocks only)
       fo: inFo ? 1 : 0,
@@ -488,6 +514,7 @@ export async function sync({ log = console.log } = {}) {
         acts,
         pat: patterns,
         // quarterly results, ₹ Cr: revenue, profit after tax, operating profit; equity and debt where the filing had a balance sheet
+        ...(own.prom.length || deals.length || sast.length ? { own: { prom: own.prom.slice(-6), deals, sast } } : {}),
         ...(fin ? { fin: { cons: fin.cons, kind: fin.kind, q: fin.quarters.slice(-10).map((x) => ({ q: x.q, at: x.at, rev: x.rev, pat: x.own, op: x.op, eq: x.eq ?? null, debt: x.debt ?? null })) } } : {}),
       }),
     );
@@ -529,7 +556,7 @@ export async function sync({ log = console.log } = {}) {
       idx: null,
       ...metrics(bars),
       y2: bars.length > 504 ? r1(pct(bars[at].c, bars[at - 504].c)) : null,
-      mcap: null, pe: null, eps: null, epsG: null, divY: null, revYoY: null, patYoY: null, opm: null, roe: null, de: null, cap: null, nextEx: null,
+      mcap: null, pe: null, eps: null, epsG: null, divY: null, revYoY: null, patYoY: null, opm: null, roe: null, de: null, prom: null, promChg: null, pledge: null, cap: null, nextEx: null,
       fo: 0, foOiChg: null, oi5: null, pcr: null, iv: null, ivRank: null, build: null, ban: 0,
       pat: [], bm: null, filed: [], ca: ca.length,
       etf: {
@@ -570,7 +597,31 @@ export async function sync({ log = console.log } = {}) {
   }
   await writeFile(path.join(OUT, 'idx.json'), JSON.stringify(indexHistory));
 
+  // The day's wider picture for the brief: institutional flows, how expensive the indices are
+  // against their own history, the day's large trades, and who has just reported results.
+  const rowOfAll = new Map(rows.map((r) => [r.s, r]));
+  const valuation = ['Nifty 50', 'Nifty 500', 'Nifty Midcap 150', 'Nifty Smallcap 250', 'Nifty Bank'].map((name) => {
+    const series = dates.map((d) => deriv.idx.get(d)?.[name]).filter((x) => x?.pe);
+    const now = deriv.idx.get(latest)?.[name];
+    if (!now?.pe || series.length < 120) return null;
+    const pes = series.map((x) => x.pe).sort((a, b) => a - b);
+    return { name, pe: now.pe, pb: now.pb, dy: now.dy, pct: Math.round((pes.filter((v) => v < now.pe).length / pes.length) * 100), lo: pes[0], hi: pes[pes.length - 1], mid: pes[Math.floor(pes.length / 2)], days: pes.length, from: dates.find((d) => deriv.idx.get(d)?.[name]?.pe) };
+  }).filter(Boolean);
+  const dealDay = Math.max(0, ...[...holders.deals.values()].map((l) => l[0].d).filter((d) => d <= latest));
+  const dealsToday = [...holders.deals.values()].flat().filter((d) => d.d === dealDay && rowOfAll.has(d.s))
+    .map((d) => ({ ...d, name: names.get(d.s), cr: r2((d.qty * d.px) / 1e7) }))
+    .sort((a, b) => b.cr - a.cr).slice(0, 40);
+  await writeFile(path.join(OUT, 'pulse.json'), JSON.stringify({
+    asOf: latest,
+    flows: holders.flows.slice(-60),
+    valuation,
+    dealDay,
+    deals: dealsToday,
+    reported: reported.map((r) => ({ ...r, name: names.get(r.s), mcap: rowOfAll.get(r.s)?.mcap ?? null })).sort((a, b) => b.at - a.at || (b.mcap ?? 0) - (a.mcap ?? 0)),
+  }));
+
   await buildNews({ names, filings, asOf: latest, log });
+  await buildOdds({ log });
   await buildOptions({ deriv, rowOf: new Map(rows.map((r) => [r.s, r])), asOf: latest, log });
 
   const meta = {

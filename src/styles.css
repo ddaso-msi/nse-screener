@@ -1178,3 +1178,32 @@ mark.pat { background: color-mix(in srgb, var(--s-sma200) 16%, transparent); col
 .results .left { text-align: left; }
 .results td, .results th { padding: 6px 10px; }
 .results td small { display: block; font-size: 11px; font-weight: 500; }
+
+/* macro backdrop in the brief (prediction-market odds) */
+.backdrop { margin-top: 14px !important; }
+.backdrop .table-wrap { margin: 8px 0 0; }
+.backdrop td, .backdrop th { padding: 7px 10px; }
+.backdrop .left { text-align: left; }
+.backdrop .note { margin: 8px 0 0; }
+
+/* ownership and peers in the stock panel */
+.detail h4 { font-size: 12px; font-weight: 600; color: var(--ink-2); margin: 12px 0 4px; display: flex; align-items: center; gap: 6px; }
+.owners li { align-items: baseline; }
+.owners b.up { color: var(--up); } .owners b.down { color: var(--down); }
+.results tr.self td { background: var(--accent-soft); }
+.results tr.median td { color: var(--ink-3); border-top: 1px solid var(--line); }
+.owners li span:last-child { flex: 1 1 auto; color: var(--ink-2); }
+/* the day's wider picture in the brief: flows, valuation, large trades */
+.pulse { margin-top: 14px !important; }
+.pulse .tiles { margin: 10px 0 0; }
+.pulse .tile > b { font-size: 22px; }
+.pulse .table-wrap { margin: 10px 0 0; }
+.pulse td, .pulse th { padding: 6px 10px; }
+.pulse .left { text-align: left; }
+.pulse .note { margin: 8px 0 0; }
+.flowbars { display: flex; align-items: flex-end; gap: 2px; height: 28px; margin-top: 6px; }
+.flowbars i { flex: 1; min-width: 2px; border-radius: 1px; background: var(--up); }
+.flowbars i.neg { background: var(--down); align-self: flex-start; }
+.valbar { position: relative; height: 6px; border-radius: 3px; background: var(--sunken); margin-top: 8px; }
+.valbar i { position: absolute; top: -3px; width: 3px; height: 12px; border-radius: 2px; background: var(--ink); }
+.results-tracker { margin: 0 0 14px !important; }

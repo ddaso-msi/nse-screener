@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { fmtDate, type Row } from './data';
 import { Delta, Icon } from './ui';
 import type { Watchlist } from './user';
+import { ResultsTracker } from './Pulse';
 
 interface Headline { at: number; title: string; link: string; source: string; blurb: string }
 interface Filing { date: number; s: string; name: string; subject: string; text: string }
@@ -72,6 +73,8 @@ export function News({ watchlist, rowOf, onOpenStock }: {
           ))}
         </div>
       </div>
+
+      <ResultsTracker onOpenStock={onOpenStock} />
 
       <div className="news-grid">
         <section className="panel">

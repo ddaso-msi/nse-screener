@@ -44,7 +44,7 @@ function stamp(text) {
   };
 }
 
-async function api(query) {
+export async function nseApi(query) {
   for (let attempt = 0; ; attempt++) {
     try {
       const res = await fetch(`${API}/${query}`, {
@@ -73,7 +73,7 @@ async function refreshIndex(log) {
   for (const [from, to] of OLD_WINDOWS) {
     const key = `${from}:${to}`;
     if (index.old.includes(key)) continue;
-    const list = await api(`corporates-financial-results?index=equities&period=Quarterly&from_date=${from}&to_date=${to}`);
+    const list = await nseApi(`corporates-financial-results?index=equities&period=Quarterly&from_date=${from}&to_date=${to}`);
     for (const r of list) {
       const when = stamp(r.broadCastDate) ?? stamp(r.filingDate);
       add(r.xbrl, { s: r.symbol, q: stamp(r.toDate)?.date, c: r.consolidated === 'Consolidated' ? 1 : 0, at: when?.date, late: when?.late ? 1 : 0, n: Number(r.seqNumber) || 0 });
@@ -85,7 +85,7 @@ async function refreshIndex(log) {
   // newest first, so stop at the first page with nothing new
   let fresh = 0;
   for (let page = 1; ; page++) {
-    const res = await api(`integrated-filing-results?index=equities&period_ended=all&type=Integrated%20Filing-%20Financials&page=${page}&size=${PAGE}`);
+    const res = await nseApi(`integrated-filing-results?index=equities&period_ended=all&type=Integrated%20Filing-%20Financials&page=${page}&size=${PAGE}`);
     const list = res.data ?? [];
     let added = 0;
     for (const r of list) {
@@ -172,7 +172,13 @@ export async function fetchResults(log, symbols, limit = Number(process.env.RESU
   }
   const parsed = await readJson(PARSED, {});
   // newest quarters first; a first run is spread over several nights so no single run takes too long
-  const waiting = [...choose(index, symbols).values()].flatMap((x) => x.filings).filter((f) => !(f.url in parsed)).sort((a, b) => b.q - a.q);
+  // Newest quarters first. The same quarter a year earlier comes right after the two newest, because
+  // growth can't be shown without it.
+  const all = [...choose(index, symbols).values()].flatMap((x) => x.filings);
+  const quartersDesc = [...new Set(all.map((f) => f.q))].sort((a, b) => b - a);
+  const first = [quartersDesc[0], quartersDesc[1], quartersDesc[0] - 10000, quartersDesc[1] - 10000];
+  const rank = (q) => (first.includes(q) ? first.indexOf(q) : 4 + quartersDesc.indexOf(q));
+  const waiting = all.filter((f) => !(f.url in parsed)).sort((a, b) => rank(a.q) - rank(b.q));
   if (!waiting.length) return;
   const todo = waiting.slice(0, limit);
   log(`  Reading ${todo.length} results filings${waiting.length > todo.length ? ` (${waiting.length - todo.length} more left for later runs)` : ''}…`);

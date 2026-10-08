@@ -135,6 +135,7 @@ function Custom({ filters, onOpenFilters }: { filters: Filters; onOpenFilters: (
       </div>
       {IN_BROWSER && testable && size != null && size > 0 && <p className="note">Running this downloads about {size} MB of price history to your device (once a day; less on later runs).</p>}
       {busy && runs.length === 0 && <p className="note">The first run loads three years of history and takes a few seconds.</p>}
+      {(['prom', 'promChg', 'pledge'] as const).some((k) => filters.ranges[k]) && <p className="note down">The ownership filters (promoter holding, its change, pledged shares) can't be backtested, because Sensa has no day-by-day history of them. This test ignores them.</p>}
       {(['revYoY', 'patYoY', 'opm', 'roe', 'de'] as const).some((k) => filters.ranges[k]) && <p className="note">This screen uses figures from quarterly results. Those go back to early 2024, and growth and return on equity need a year of them first, so the test covers roughly the last 18 months rather than three years.</p>}
       {noFloor && <p className="note">This screen has no minimum turnover, so it includes illiquid stocks you may not be able to trade at these prices.</p>}
       {error && <p className="note down">{error}</p>}

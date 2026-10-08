@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { BUILD_LABEL, HOSTED, describeFilters, fmtDate, fmtMcap, fmtPct, fmtPrice, EMPTY, type Filters, type Row } from './data';
 import { BreadthMeter, Market, type MarketData } from './Market';
+import { MacroBackdrop } from './Odds';
+import { Pulse } from './Pulse';
 import { Delta, Icon, Meter, Spark, tone } from './ui';
 import type { BriefScreen, Watchlist } from './user';
 
@@ -244,6 +246,8 @@ export function Brief({ watchlist, onToggleWatch, screens, onSaveScreens, curren
       {error && <p className="note down">{error}</p>}
 
       {m && <Market market={m} />}
+      <Pulse onOpenStock={onOpenStock} />
+      <MacroBackdrop />
 
       <section id="watchlist">
         <h3>Watchlist <small>{withAlerts} of {watch.length} with something to note</small></h3>

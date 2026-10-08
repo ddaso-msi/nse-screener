@@ -56,6 +56,12 @@ export interface Row {
   roe: number | null;
   /** Borrowings / shareholders' equity (not for banks and lenders) */
   de: number | null;
+  /** Promoters' share of the company at the latest filing, % */
+  prom: number | null;
+  /** Change in promoter holding since the previous filing, percentage points */
+  promChg: number | null;
+  /** Share of the promoters' holding that is pledged, % */
+  pledge: number | null;
   /** L / M / S by market-cap rank (top 100, next 150, rest) */
   cap: 'L' | 'M' | 'S' | null;
   nextEx: { ex: number; text: string } | null;
@@ -128,6 +134,12 @@ export interface History {
   acts: { ex: number; text: string }[];
   /** Where each current pattern starts, its pivot (level) and its low */
   pat?: { code: PatternCode; from: number; level: number; low: number }[];
+  /** Ownership: promoter holding by filing date (oldest first), and the latest large trades and disclosures (newest first) */
+  own?: {
+    prom: [number, number][];
+    deals: { d: number; who: string; side: 'B' | 'S'; qty: number; px: number; kind: 'bulk' | 'block' }[];
+    sast: { d: number; who: string; prom: 0 | 1; sell: 0 | 1; shares: number; after: number | null; mode: string | null }[];
+  };
   /** Quarterly results in ₹ Cr, oldest first. kind: N company, B bank, F other lender */
   fin?: {
     cons: 0 | 1;
@@ -142,6 +154,7 @@ export type NumKey =
   | 'rsi' | 'volX' | 'deliv' | 'avgTurnover' | 'turnover'
   | 'mcap' | 'pe' | 'epsG' | 'divY' | 'rs'
   | 'revYoY' | 'patYoY' | 'opm' | 'roe' | 'de'
+  | 'prom' | 'promChg' | 'pledge'
   | 'foOiChg' | 'oi5' | 'pcr' | 'ivRank';
 
 export type Flag = 'newHi' | 'newLo' | 'golden' | 'death' | 'longBuild' | 'shortBuild' | 'shortCover' | 'longUnwind' | PatternCode;
@@ -213,6 +226,14 @@ export const FIELD_GROUPS: { title: string; fields: FieldDef[] }[] = [
       { key: 'opm', label: 'Operating margin', unit: '%', hint: 'Profit before interest, depreciation, tax and other income, as a share of sales. Not shown for banks and lenders.' },
       { key: 'roe', label: 'Return on equity', unit: '%', hint: "The last four quarters' profit as a share of shareholders' equity" },
       { key: 'de', label: 'Debt to equity', unit: '×', hint: "Borrowings divided by shareholders' equity, from the latest balance sheet (filed twice a year). Not shown for banks and lenders." },
+    ],
+  },
+  {
+    title: 'Ownership',
+    fields: [
+      { key: 'prom', label: 'Promoter holding', unit: '%', hint: "The founders' and controlling group's share of the company, from the latest shareholding filing" },
+      { key: 'promChg', label: 'Promoter holding change', unit: 'pts', hint: 'Change since the previous shareholding filing, in percentage points. Above 0 means promoters added.' },
+      { key: 'pledge', label: 'Promoter shares pledged', unit: '%', hint: "Share of the promoters' holding pledged as security for loans. High pledging is a risk: lenders can sell the shares if the price falls." },
     ],
   },
   {
@@ -368,7 +389,7 @@ export function toCsv(rows: Row[]) {
     ['Symbol', 's'], ['Company', 'name'], ['Sector', 'sector'], ['Index', 'idx'], ['Close', 'close'],
     ['Day %', 'chg'], ['1W %', 'w1'], ['1M %', 'm1'], ['3M %', 'm3'], ['6M %', 'm6'], ['1Y %', 'y1'],
     ['Market Cap Cr', 'mcap'], ['P/E', 'pe'], ['EPS', 'eps'], ['Earnings Growth 1Y %', 'epsG'], ['Dividend Yield %', 'divY'],
-    ['Sales Growth YoY %', 'revYoY'], ['Profit Growth YoY %', 'patYoY'], ['Operating Margin %', 'opm'], ['ROE %', 'roe'], ['Debt/Equity', 'de'],
+    ['Sales Growth YoY %', 'revYoY'], ['Profit Growth YoY %', 'patYoY'], ['Operating Margin %', 'opm'], ['ROE %', 'roe'], ['Debt/Equity', 'de'], ['Promoter Holding %', 'prom'], ['Promoter Change pts', 'promChg'], ['Promoter Pledged %', 'pledge'],
     ['Relative Strength', 'rs'], ['Futures OI Chg %', 'foOiChg'], ['Futures Position', 'build'], ['Put/Call Ratio', 'pcr'], ['IV %', 'iv'], ['IV Rank', 'ivRank'], ['RSI 14', 'rsi'], ['vs 20DMA %', 'vs20'], ['vs 50DMA %', 'vs50'], ['vs 200DMA %', 'vs200'],
     ['52W High', 'hi52'], ['52W Low', 'lo52'], ['From 52W High %', 'fromHi'], ['Volume', 'vol'],
     ['Volume x 20D avg', 'volX'], ['Delivery %', 'deliv'], ['Avg Turnover Cr', 'avgTurnover'],

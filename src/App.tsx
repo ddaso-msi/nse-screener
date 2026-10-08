@@ -631,6 +631,7 @@ export default function App() {
         <Detail
           onOpenChart={() => openChart(selectedRow.s)}
           onLogTrade={() => { setJournalSymbol(selectedRow.s); closeDetail(); setView('journal'); }}
+          onOpen={openStock}
           key={view === 'screener' ? 'docked' : 'floating'}
           floating={view !== 'screener'}
           row={selectedRow}

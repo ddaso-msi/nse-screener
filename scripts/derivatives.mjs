@@ -266,7 +266,7 @@ export async function loadDerivatives() {
     const rows = {};
     for (const line of (await readFile(path.join(DIRS.idx, f), 'utf8')).split(/\r?\n/).slice(1)) {
       const c = line.split(',');
-      if (c.length > 7) rows[c[0]] = { close: +c[5], chg: +c[7], pe: +c[10] || null };
+      if (c.length > 7) rows[c[0]] = { close: +c[5], chg: +c[7], pe: +c[10] || null, pb: +c[11] || null, dy: +c[12] || null };
     }
     if (Object.keys(rows).length) idx.set(tagDate(f.slice(0, 8)), rows);
   }

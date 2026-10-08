@@ -71,12 +71,108 @@ function Results({ row, fin }: { row: Row; fin: NonNullable<History['fin']> }) {
   );
 }
 
-export function Detail({ row, onClose, onOpenChart, onLogTrade, watch, onToggleWatch, onEditWatch, floating = false, paper, onSavePaper, asOf, rowOf }: {
+const crore = (qty: number, px: number) => `₹${((qty * px) / 1e7).toFixed((qty * px) / 1e7 >= 100 ? 0 : 1)} Cr`;
+
+/** Who owns the company and what large holders have been doing. */
+function Ownership({ row, own }: { row: Row; own: History['own'] }) {
+  if (row.prom == null && !own?.deals.length && !own?.sast.length) return null;
+  return (
+    <>
+      <h3>Ownership</h3>
+      <div className="stats">
+        <Stat term="promoter" label="Promoter holding" value={row.prom == null ? '–' : `${row.prom.toFixed(2)}%`} />
+        <Stat label="Change since last filing" value={row.promChg == null ? '–' : row.promChg === 0 ? 'No change' : `${row.promChg > 0 ? '+' : '−'}${Math.abs(row.promChg).toFixed(2)} pts`} cls={tone(row.promChg)} />
+        <Stat term="pledge" label="Promoter shares pledged" value={row.pledge == null ? '–' : `${row.pledge.toFixed(1)}%`} cls={row.pledge != null && row.pledge >= 25 ? 'down' : ''} />
+      </div>
+      {own && own.prom.length > 1 && (
+        <p className="note">Promoter holding by filing: {own.prom.map(([q, pct]) => `${monthOf(q)} ${String(Math.floor(q / 10000)).slice(2)} ${pct.toFixed(1)}%`).join(' · ')}</p>
+      )}
+      {own && own.deals.length > 0 && (
+        <>
+          <h4>Large trades in the last year <Explain term="deals" /></h4>
+          <ul className="acts owners">
+            {own.deals.map((d, i) => (
+              <li key={i}>
+                <span className="muted">{fmtDate(d.d)}</span>
+                <span><b className={d.side === 'B' ? 'up' : 'down'}>{d.side === 'B' ? 'Bought' : 'Sold'}</b> {crore(d.qty, d.px)} at ₹{fmtPrice(d.px)} · {d.who} <small className="muted">({d.kind} deal)</small></span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      {own && own.sast.length > 0 && (
+        <>
+          <h4>Disclosed by promoters and large holders</h4>
+          <ul className="acts owners">
+            {own.sast.map((d, i) => (
+              <li key={i}>
+                <span className="muted">{fmtDate(d.d)}</span>
+                <span><b className={d.sell ? 'down' : 'up'}>{d.sell ? 'Sold' : 'Acquired'}</b> {fmtQty(d.shares)} shares · {d.who}{d.prom ? ' (promoter group)' : ''}{d.after != null && `, now holds ${d.after}%`}{d.mode && <small className="muted"> · {d.mode.toLowerCase()}</small>}</span>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </>
+  );
+}
+
+const median = (values: (number | null)[]) => {
+  const v = values.filter((x): x is number => x != null).sort((a, b) => a - b);
+  return v.length ? v[Math.floor(v.length / 2)] : null;
+};
+
+/** The stock beside the companies of its sector closest to it in size. */
+function Peers({ row, rowOf, onOpen }: { row: Row; rowOf: Map<string, Row>; onOpen: (symbol: string) => void }) {
+  if (!row.sector) return null;
+  const sector = [...rowOf.values()].filter((r) => !r.etf && r.sector === row.sector && r.mcap != null).sort((a, b) => b.mcap! - a.mcap!);
+  const at = sector.findIndex((r) => r.s === row.s);
+  if (at < 0 || sector.length < 3) return null;
+  // two larger and three smaller where they exist, always six rows if the sector has them
+  const from = Math.max(0, Math.min(at - 2, sector.length - 6));
+  const shown = sector.slice(from, from + 6);
+  const cell = (v: number | null, digits = 1, unit = '') => (v == null ? '–' : `${v.toFixed(digits)}${unit}`);
+  return (
+    <>
+      <h3>Peers <small className="muted">{row.sector} · {sector.length} companies</small></h3>
+      <div className="table-wrap results">
+        <table>
+          <thead><tr><th className="left">Company</th><th>M-cap</th><th>P/E</th><th>Sales gr.</th><th>ROE</th><th>1Y</th></tr></thead>
+          <tbody>
+            {shown.map((r) => (
+              <tr key={r.s} className={r.s === row.s ? 'self static' : ''} onClick={() => r.s !== row.s && onOpen(r.s)}>
+                <td className="left"><b>{r.s}</b></td>
+                <td>{fmtMcap(r.mcap)}</td>
+                <td>{cell(r.pe)}</td>
+                <td className={tone(r.revYoY)}>{fmtPct(r.revYoY, 0)}</td>
+                <td>{cell(r.roe, 0, '%')}</td>
+                <td className={tone(r.y1)}>{fmtPct(r.y1, 0)}</td>
+              </tr>
+            ))}
+            <tr className="static median">
+              <td className="left">Sector median</td>
+              <td>{fmtMcap(median(sector.map((r) => r.mcap)))}</td>
+              <td>{cell(median(sector.map((r) => r.pe)))}</td>
+              <td>{fmtPct(median(sector.map((r) => r.revYoY)), 0)}</td>
+              <td>{cell(median(sector.map((r) => r.roe)), 0, '%')}</td>
+              <td>{fmtPct(median(sector.map((r) => r.y1)), 0)}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <p className="note">The companies of the same sector closest in size. Click one to open it.</p>
+    </>
+  );
+}
+
+export function Detail({ row, onClose, onOpenChart, onLogTrade, onOpen, watch, onToggleWatch, onEditWatch, floating = false, paper, onSavePaper, asOf, rowOf }: {
   row: Row;
   /** Shown as an overlay drawer instead of a docked column */
   floating?: boolean;
   onOpenChart: () => void;
   onLogTrade: () => void;
+  /** Open another stock (from the peers table) */
+  onOpen: (symbol: string) => void;
   onClose: () => void;
   watch: WatchItem | null;
   onToggleWatch: () => void;
@@ -277,6 +373,8 @@ export function Detail({ row, onClose, onOpenChart, onLogTrade, watch, onToggleW
       </div>
 
       {!row.etf && hist?.fin && <Results row={row} fin={hist.fin} />}
+      {!row.etf && <Ownership row={row} own={hist?.own} />}
+      {!row.etf && <Peers row={row} rowOf={rowOf} onOpen={onOpen} />}
 
       {row.fo === 1 && (
         <>
