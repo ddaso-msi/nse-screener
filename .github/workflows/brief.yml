@@ -58,7 +58,20 @@ jobs:
             fi
           done
       - name: Build the brief
-        run: node scripts/brief.mjs
+        id: build
+        # NSE's archive sometimes refuses a GitHub server outright (HTTP 403).
+        # If the last brief is recent, that run ends quietly and the site keeps
+        # what it has; the next run gets a different server. If the data is
+        # already old, the refusal counts as a failure.
+        run: |
+          set -o pipefail
+          if node scripts/brief.mjs 2>&1 | tee /tmp/brief.log; then exit 0; fi
+          grep -q "HTTP 403" /tmp/brief.log || exit 1
+          last=$(ls data/user/briefs | grep -oE '^[0-9]{8}' | sort | tail -1)
+          days=$(node -p "Math.floor((Date.now() + 5.5 * 36e5 - Date.UTC(+'$last'.slice(0, 4), +'$last'.slice(4, 6) - 1, +'$last'.slice(6, 8))) / 864e5)")
+          echo "NSE refused this server. Last brief: $last, $days day(s) ago."
+          [ "$days" -le 3 ] || exit 1
+          echo "refused=true" >> "$GITHUB_OUTPUT"
       - name: Save downloaded NSE files
         if: always()
         uses: actions/cache/save@v4
@@ -66,6 +79,7 @@ jobs:
           path: data/raw
           key: nse-raw-${{ github.run_id }}
       - name: Commit the log and brief
+        if: steps.build.outputs.refused != 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -79,6 +93,7 @@ jobs:
             git push -q
           fi
       - name: Check the data is fresh
+        if: steps.build.outputs.refused != 'true'
         # A run can "succeed" while finding nothing new (NSE renames a file, a feed
         # changes shape). More than five days without a new session is not a holiday.
         run: |
@@ -90,7 +105,7 @@ jobs:
             if (days > 5) { console.error('No new NSE session for ' + days + ' days.'); process.exit(1); }
           "
       - name: Publish the app
-        if: env.CLOUDFLARE_API_TOKEN != ''
+        if: env.CLOUDFLARE_API_TOKEN != '' && steps.build.outputs.refused != 'true'
         run: |
           node scripts/backtest.mjs > /dev/null   # preset comparison for the Backtest tab
           node scripts/pack.mjs > /dev/null       # history for in-browser custom backtests
